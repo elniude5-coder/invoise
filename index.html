@@ -1,205 +1,65 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ticket de Compra</title>
-  <style>
-    :root{
-      --bg:#111;
-      --panel:#1a1a1a;
-      --muted:#cfd3d8;
-      --line:#2a2a2a;
-      --txt:#eee;
-      --accent:#ff4da6;   /* magenta para precios */
-      --qty:#2dd4bf;      /* verde para QTY */
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--txt);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace;
-    }
-    #ticket{
-      max-width: 920px;
-      margin: 24px auto;
-      padding: 24px 28px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: var(--panel);
-    }
-    .top{
-      margin-bottom: 18px;
-    }
-    .brand{
-      font-weight: 900;
-      font-size: 28px;
-      letter-spacing: 1px;
-      margin: 0 0 6px 0;
-    }
-    .sub{
-      margin:0;
-      color:var(--muted);
-      line-height:1.15;
-      font-size: 14px;
-    }
-    .meta{
-      margin-top: 8px;
-      display: grid;
-      grid-template-columns: 160px 1fr;
-      gap: 6px 12px;
-      font-size: 14px;
-    }
-    .hr{border:none;border-top:1px solid var(--line); margin:14px 0}
+<script>
+  /* --- Utilidades --- */
+  const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+  const split = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
+  // Convierte " $2.00 ", "RD$ 1,234.50", " 36.00 " -> 2, 1234.5, 36
+  const num = s => {
+    if (s == null) return 0;
+    const cleaned = String(s)
+      .replace(/\u00A0/g, " ")      // NBSP -> space
+      .replace(/\s+/g, "")          // quita espacios
+      .replace(/[^0-9.\-]/g, "");   // deja solo dígitos, punto y signo
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? 0 : n;
+  };
 
-    table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0 18px;     /* espacios entre filas: igual que tu mock */
-    }
-    thead th{
-      text-align:left;
-      font-weight:800;
-      font-size:18px;
-      color:var(--muted);
-      letter-spacing:.5px;
-    }
-    .qty-col{width:90px; color:var(--qty)}
-    .upc-col{width:220px}
-    .desc-col{}
-    .total-col{width:160px; text-align:right; color:var(--accent); font-weight:700}
-    tbody td{font-size:18px; vertical-align:top}
-    .price-inline{color:var(--accent); font-weight:700}
+  /* --- Leer parámetros --- */
+  const q = new URLSearchParams(location.search);
+  const pedido = q.get("boleta") || "";
+  const cliente = q.get("mesa") || "";
+  const direccion = q.get("direccion") || "";
+  const fecha = q.get("fecha") || "";
+  const estado = q.get("estado") || "";
 
-    .summary{
-      margin-top:6px;
-      display:flex;
-      justify-content:flex-end;
-      gap:28px;
-      align-items:center;
-      font-size:18px;
-    }
-    .summary .label{color:var(--muted)}
-    .summary .value{color:var(--accent); font-weight:800; min-width:140px; text-align:right}
-    .thanks{margin-top:22px; text-align:center; color:var(--muted); font-weight:700}
-  </style>
-</head>
-<body>
-  <div id="ticket">
-    <!-- Encabezado -->
-    <div class="top">
-      <h1 class="brand">MD MAGUEY DISTRIBUTOR</h1>
-      <p class="sub">250 ROBINSON AVE #2 · BRONX NY 10465</p>
-      <p class="sub">Tel: 347-589-2676</p>
+  const cantidades    = split(q.get("cantidades"));
+  const descripciones = split(q.get("servicios"));
+  const upcs          = split(q.get("upcs"));
+  const p_units       = split(q.get("p_unit"));   // puede venir como $2.00, RD$2.00, etc.
 
-      <div class="meta">
-        <div>Fecha</div>          <div id="fecha_display">-</div>
-        <div>Factura No.</div>    <div id="factura_no">-</div>
-        <div id="cliente_row" style="display:none;">Cliente</div>
-        <div id="cliente_val" style="display:none;">-</div>
-        <div id="dir_row" style="display:none;">Dirección</div>
-        <div id="dir_val" style="display:none;">-</div>
-      </div>
-    </div>
+  /* --- Header --- */
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setText("fecha_display", fecha || new Date().toLocaleDateString());
+  setText("factura_no", pedido || "-");
+  if (cliente){ document.getElementById("cliente_row").style.display="block"; document.getElementById("cliente_val").style.display="block"; setText("cliente_val", cliente); }
+  if (direccion){ document.getElementById("dir_row").style.display="block"; document.getElementById("dir_val").style.display="block"; setText("dir_val", direccion); }
+  if (estado){ setText("estado_view", estado); }
 
-    <hr class="hr" />
+  /* --- Filas --- */
+  const tbody = document.getElementById("rows");
+  let units = 0, grand = 0;
+  const len = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
 
-    <!-- Tabla -->
-    <table>
-      <thead>
-        <tr>
-          <th class="qty-col">QTY</th>
-          <th class="upc-col">UPC</th>
-          <th>DESCRIPCIÓN</th>
-          <th class="total-col">TOTAL</th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
+  for (let i=0;i<len;i++){
+    const qty   = num(cantidades[i]);   // limpia "1" o " 1 "
+    const unit  = num(p_units[i]);      // limpia "$2.00", "RD$2.00", etc.
+    const line  = qty * unit;
 
-    <hr class="hr" />
+    units += qty;
+    grand += line;
 
-    <!-- Resumen -->
-    <div class="summary">
-      <div class="label">Total Unidades</div>
-      <div id="units" class="value">0</div>
-      <div class="label">TOTAL A PAGAR</div>
-      <div id="grand" class="value">$0.00</div>
-    </div>
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="qty-col">${qty || ""}</td>
+      <td class="upc-col">${upcs[i] || ""}</td>
+      <td class="desc-col">
+        ${(descripciones[i] || "")}${descripciones[i] ? "<br/>" : ""}<span class="price-inline">$${fmt(unit)}</span>
+      </td>
+      <td class="total-col">$${fmt(line)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
 
-    <div class="thanks">Gracias por su compra</div>
-    <div class="thanks" id="estado_view"></div>
-  </div>
-
-  <script>
-    // ---------- Utilidades ----------
-    const fmt = (n)=> Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
-    const split = (s)=> String(s||"").split(",").map(x=>x.trim()).filter(x=>x!=="")
-
-    // ---------- Leer parámetros ----------
-    const q = new URLSearchParams(location.search);
-    const pedido   = q.get("boleta")      || "";
-    const cliente  = q.get("mesa")        || "";
-    const direccion= q.get("direccion")   || "";
-    const fecha    = q.get("fecha")       || "";
-    const estado   = q.get("estado")      || "";
-
-    const cantidades   = split(q.get("cantidades"));
-    const descripciones= split(q.get("servicios"));
-    const upcs         = split(q.get("upcs"));
-    const p_units      = split(q.get("p_unit"));
-
-    // ---------- Pintar meta ----------
-    document.getElementById("fecha_display").textContent = fecha || new Date().toLocaleDateString();
-    document.getElementById("factura_no").textContent = pedido || "-";
-
-    if (cliente){
-      document.getElementById("cliente_row").style.display = "block";
-      document.getElementById("cliente_val").style.display = "block";
-      document.getElementById("cliente_val").textContent = cliente;
-    }
-    if (direccion){
-      document.getElementById("dir_row").style.display = "block";
-      document.getElementById("dir_val").style.display = "block";
-      document.getElementById("dir_val").textContent = direccion;
-    }
-    if (estado){
-      document.getElementById("estado_view").textContent = estado;
-    }
-
-    // ---------- Construir filas ----------
-    const tbody = document.getElementById("rows");
-    let units = 0;
-    let grand = 0;
-
-    const len = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
-    for (let i=0;i<len;i++){
-      const qty   = parseFloat(cantidades[i]) || 0;
-      const upc   = upcs[i] || "";
-      const name  = descripciones[i] || "";
-      const unit  = parseFloat(p_units[i]) || 0;
-      const line  = qty * unit;
-
-      units += qty;
-      grand += line;
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="qty-col">${qty || ""}</td>
-        <td class="upc-col">${upc}</td>
-        <td class="desc-col">
-          ${name ? name + "<br/>" : ""}<span class="price-inline">$${fmt(unit)}</span>
-        </td>
-        <td class="total-col">$${fmt(line)}</td>
-      `;
-      tbody.appendChild(tr);
-    }
-
-    // ---------- Totales ----------
-    document.getElementById("units").textContent = units;
-    document.getElementById("grand").textContent = "$" + fmt(grand);
-  </script>
-</body>
-</html>
-
+  /* --- Totales --- */
+  setText("units", units);
+  setText("grand", "$" + fmt(grand));
+</script>
