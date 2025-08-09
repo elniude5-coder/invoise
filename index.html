@@ -1,1 +1,161 @@
 
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=60mm, initial-scale=1.0" />
+    <title>Ticket de Compra</title>
+    <style>
+      body {
+        font-family: "Courier New", monospace;
+        margin: 0;
+        padding: 0;
+        font-size: 2.8mm;
+        background: white;
+        color: black;
+      }
+      #thermal-pos { margin: 0; max-width: 60mm; padding: 1mm; }
+
+      .store-header { text-align: center; margin-bottom: 2mm; }
+      .store-title { font-size: 4mm; font-weight: bold; margin: 1mm 0; letter-spacing: 0.5mm; line-height: 1; }
+      .store-subtitle { font-size: 3.2mm; font-weight: bold; margin: 0; letter-spacing: 0.3mm; }
+      .store-details { font-size: 2.5mm; margin: 0.5mm 0; text-align: center; line-height: 1.2; }
+
+      .products-table { width: 100%; border-collapse: collapse; margin: 2mm 0; }
+      .products-table th { font-size: 2.8mm; font-weight: bold; text-align: left; padding: 0.5mm 0.2mm; border-bottom: 1px solid #000; }
+      .products-table td { font-size: 2.5mm; padding: 0.2mm 0.2mm; text-align: left; line-height: 1; }
+
+      .qty-col { width: 6mm; text-align: right; }
+      .upc-col { width: 18mm; }
+      .desc-col { width: 20mm; }
+      .total-col { width: 12mm; text-align: right; }
+
+      .totals-section { margin: 1mm 0; font-size: 2.5mm; }
+      .total-row { display: flex; justify-content: space-between; margin: 0.5mm 0; padding: 0.2mm 0; }
+      .total-row.bold { font-weight: bold; }
+
+      .footer-section { text-align: center; margin-top: 3mm; font-size: 2.5mm; }
+      .thanks-message { font-weight: bold; margin: 2mm 0; }
+      .saldo-text { margin: 1mm 0; text-align: center; font-weight: bold; }
+    </style>
+  </head>
+  <body onload="window.print()" onfocus="window.close()">
+    <div id="thermal-pos">
+      <!-- Encabezado con la info de MAGUEY DISTRIBUTOR -->
+      <div class="store-header">
+        <div class="store-title">MAGUEY DISTRIBUTOR</div>
+        <div class="store-subtitle"></div>
+        <div class="store-details">
+          <div>250 ROBINSON AVE #2</div>
+          <div>BRONX NY 10465</div>
+          <div>Tel: 347-589-2676</div>
+          <div>Fecha: <span id="fecha_display"></span></div>
+          <div>Factura No.: <span id="factura_no"></span></div>
+          <div id="cliente_section" style="display:none">Cliente: <span id="cliente_nombre"></span></div>
+          <div id="direccion_section" style="display:none">Dirección: <span id="direccion_info"></span></div>
+        </div>
+      </div>
+
+      <!-- Tabla de productos -->
+      <table class="products-table">
+        <thead>
+          <tr>
+            <th class="qty-col">QTY</th>
+            <th class="upc-col">UPC</th>
+            <th class="desc-col">DESCRIPCION</th>
+            <th class="total-col">TOTAL</th>
+          </tr>
+        </thead>
+        <tbody id="products-tbody"></tbody>
+      </table>
+
+      <!-- Totales -->
+      <div class="totals-section">
+        <div class="total-row">
+          <span>Total Unidades</span>
+          <span id="total_units_display"></span>
+        </div>
+        <div class="total-row bold">
+          <span>TOTAL A PAGAR</span>
+          <span>$<span id="total_display"></span></span>
+        </div>
+      </div>
+
+      <div class="footer-section">
+        <div class="thanks-message">Gracias por su compra</div>
+      </div>
+
+      <div class="saldo-text"><span id="estado"></span></div>
+    </div>
+
+    <!-- Script único: calcula totales correctos y pinta el ticket -->
+    <script>
+      const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+      const splitList = s => String(s || "").split(",").map(x => x.trim());
+
+      const params = new URLSearchParams(window.location.search);
+
+      const nro_boleta = params.get("boleta") || "627541513";
+      const nro_mesa   = params.get("mesa")   || "";
+      const direc      = params.get("direccion") || "";
+      const fecha      = params.get("fecha")  || "";
+      const estado     = params.get("estado") || "";
+
+      let cantidades    = splitList(params.get("cantidades") || "1");
+      let descripciones = splitList(params.get("servicios")  || "Producto");
+      let upcs          = splitList(params.get("upcs")       || "");
+      let p_units       = splitList(params.get("p_unit")     || "0"); // precio unitario
+
+      const rows = [];
+      let totalUnidades = 0;
+      let totalPagar = 0;
+
+      for (let i = 0; i < descripciones.length; i++) {
+        const qty  = parseFloat(cantidades[i]) || 0;
+        const unit = parseFloat(p_units[i])    || 0;
+        const line = qty * unit;
+
+        totalUnidades += qty;
+        totalPagar    += line;
+
+        rows.push({
+          cantidad: qty,
+          upc: upcs[i] || "",
+          descripcion: descripciones[i] || "",
+          unit_fmt: fmt(unit),
+          line_fmt: fmt(line),
+        });
+      }
+
+      const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+      setText("fecha_display", fecha);
+      setText("factura_no", nro_boleta);
+
+      if (nro_mesa) { setText("cliente_nombre", nro_mesa); const sec=document.getElementById("cliente_section"); if(sec) sec.style.display="block"; }
+      if (direc)    { setText("direccion_info", direc);    const sec=document.getElementById("direccion_section"); if(sec) sec.style.display="block"; }
+
+      const tbody = document.getElementById("products-tbody");
+      if (tbody) {
+        rows.forEach(r => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="qty-col">${r.cantidad}</td>
+            <td class="upc-col">${r.upc}</td>
+            <td class="desc-col">${r.descripcion}<br>$${r.unit_fmt}</td>
+            <td class="total-col">$${r.line_fmt}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      setText("total_units_display", totalUnidades);
+      setText("total_display", fmt(totalPagar));
+      setText("estado", estado);
+
+      window.onload = () => { window.print(); };
+      window.onfocus = () => { window.close(); };
+    </script>
+  </body>
+</html>
