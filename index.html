@@ -3,81 +3,41 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Imprimir con PassPRNT</title>
+  <title>Imprimir factura 58mm – PassPRNT</title>
   <style>
-    body { font-family: -apple-system, system-ui, Arial; margin: 24px; background:#f7f7f7; }
-    h1 { font-size: 20px; margin: 0 0 14px; }
-    .card { background:#fff; border-radius:12px; padding:16px; box-shadow:0 4px 20px rgba(0,0,0,.06); max-width:540px; }
-    .btn { display:inline-block; padding:14px 18px; border-radius:10px; text-decoration:none; font-weight:600; }
-    .btn + .btn { margin-left:10px; }
-    .primary { background:#1f6feb; color:#fff; }
-    .ghost   { background:#eef2ff; color:#1f2a44; }
-    .hint { color:#555; font-size:14px; margin-top:12px; }
-    .group { margin:18px 0; }
-    code { background:#f0f3fa; padding:2px 6px; border-radius:6px; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 24px; }
+    button { padding: 12px 16px; font-size: 16px; cursor: pointer; }
+    small { color:#666; display:block; margin-top:8px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Imprimir directo con PassPRNT</h1>
+  <h2>Prueba de impresión directa</h2>
 
-    <!-- Botón 1: PDF de prueba (W3C) -->
-    <div class="group">
-      <div class="hint">Prueba básica (PDF público de W3C)</div>
-      <a class="btn primary" href="#"
-         onclick="openPassPRNT('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'); return false;">
-        Imprimir PDF de prueba
-      </a>
-    </div>
-
-    <!-- Botón 2: Tu factura en RAW de GitHub -->
-    <div class="group">
-      <div class="hint">Tu archivo en GitHub (cámbialo si usas otro nombre)</div>
-      <a class="btn ghost" href="#"
-         onclick="openPassPRNT('https://raw.githubusercontent.com/elniude5-coder/invoise/main/factura_recibo_58mm.pdf'); return false;">
-        Imprimir mi factura (RAW)
-      </a>
-    </div>
-
-    <!-- Enlaces visibles por si necesitas copiar/pegar manualmente -->
-    <div class="group">
-      <div class="hint">Si prefieres enlace “puro” (tocarlo también abre PassPRNT):</div>
-      <div style="word-break:break-all; font-size:13px; line-height:1.35;">
-        <a id="rawLink"></a>
-      </div>
-    </div>
-
-    <div class="hint">
-      Consejos rápidos:<br/>
-      • Asegúrate de tener seleccionada tu impresora Star en PassPRNT (BT:PRNT).<br/>
-      • Si aparece <b>E016/E009</b>, abre PassPRNT → Check Communication y reintenta.<br/>
-      • Si aparece <b>E014</b>, prueba el botón de arriba (W3C) y confirma que el RAW está accesible.
-    </div>
-  </div>
+  <button id="btnPrint">Imprimir factura en 58 mm</button>
+  <small>Usa Star PassPRNT y tu PDF del repositorio.</small>
 
   <script>
-    function passprntUrl(fileUrl){
-      return "starpassprnt://v1/print/nopreview?url=" + encodeURIComponent(fileUrl);
-    }
-    function openPassPRNT(fileUrl){
-      // Lanza PassPRNT directamente
-      window.location.href = passprntUrl(fileUrl);
+    // 👇 TU PDF REAL (RAW de GitHub)
+    const PDF_URL = "https://raw.githubusercontent.com/elniude5-coder/invoise/main/factura_recibo_58mm.pdf";
 
-      // Fallback: si algo bloquea el esquema, ofrece el enlace visible
-      setTimeout(function(){
-        const a = document.getElementById('rawLink');
-        if (a && !a.textContent) {
-          a.textContent = passprntUrl(fileUrl);
-          a.href = passprntUrl(fileUrl);
-        }
-      }, 800);
+    function openPassPRNT(url){
+      // Esquema correcto de iOS: starpassprnt://
+      const passUrl =
+        "starpassprnt://v1/print/nopreview?url=" + encodeURIComponent(url) +
+        "&paperwidth=58"; // ancho en mm (opcional)
+
+      // Intento abrir PassPRNT
+      const t = setTimeout(() => {
+        alert("No se pudo abrir PassPRNT. Verifica que esté instalada y con la impresora seleccionada.");
+      }, 2000);
+
+      window.location.href = passUrl;
+
+      // Si la página cambia de estado limpiamos el timeout
+      window.addEventListener("pagehide", () => clearTimeout(t), { once:true });
     }
 
-    // Pintamos por defecto el enlace “puro” de tu factura para copiarlo si lo necesitas
-    document.getElementById('rawLink').textContent =
-      passprntUrl('https://raw.githubusercontent.com/elniude5-coder/invoise/main/factura_recibo_58mm.pdf');
-    document.getElementById('rawLink').href =
-      passprntUrl('https://raw.githubusercontent.com/elniude5-coder/invoise/main/factura_recibo_58mm.pdf');
+    document.getElementById("btnPrint").addEventListener("click", () => openPassPRNT(PDF_URL));
   </script>
 </body>
 </html>
