@@ -3,14 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=58mm, initial-scale=1, maximum-scale=1">
-<title>Ticket 58mm – Sin desperdicio</title>
+<title>Ticket 58mm – Auto Print</title>
 <style>
-  /* ====== CONFIG 58 mm ====== */
   :root{
-    --w: 58mm;                    /* ANCHO REAL IMPRESORA */
-    --pad-x: 2mm;                 /* márgenes internos mínimos */
+    --w: 58mm;
     --font: ui-monospace, Menlo, Consolas, "Courier New", monospace;
-    --fs: 2.8mm;                  /* base ~11px */
+    --fs: 2.8mm;
     --fs-sm: 2.4mm;
     --fs-lg: 3.4mm;
     --line-h: 1.25;
@@ -19,7 +17,7 @@
   *{ box-sizing: border-box; color: var(--ink); }
   html, body{
     margin: 0; padding: 0; background: #fff;
-    width: var(--w);              /* <— asegura el ancho del documento */
+    width: var(--w);
     -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
   }
@@ -28,75 +26,48 @@
     font-family: var(--font);
     font-size: var(--fs);
     line-height: var(--line-h);
-    padding: 2mm var(--pad-x) 1mm;  /* padding inferior pequeño => no papel extra */
+    padding: 2mm 2mm 1mm;
   }
-
-  /* Encabezado compacto */
   .center{ text-align: center; }
   .title{ font-size: var(--fs-lg); font-weight: 700; margin: 0 0 0.8mm; }
   .small{ font-size: var(--fs-sm); }
   .kv{ margin-top: 1mm; }
   .kv b{ display:inline-block; min-width: 15mm; }
-
-  /* Separadores finos */
   hr{ border:0; border-top: 0.2mm dashed #000; margin: 1.6mm 0; }
-
-  /* Tabla 58mm optimizada */
   table{ width: 100%; border-collapse: collapse; }
   thead th{
     font-weight: 700; text-align: left; border-bottom: 0.2mm solid #000; padding-bottom: 0.6mm;
   }
   td{ vertical-align: top; padding-top: 0.8mm; }
-  .qty{ width: 8mm; text-align: right; padding-right: 1mm; }     /* QTY angosta */
-  .desc{ width: 34mm; }                                           /* Descripción ocupa el centro */
-  .ttl{ width: 12mm; text-align: right; }                         /* Total a la derecha */
-  .uprice{ display:block; font-weight: 700; }                     /* precio unit en línea 2 */
-
-  /* Totales compactos */
+  .qty{ width: 8mm; text-align: right; padding-right: 1mm; }
+  .desc{ width: 34mm; }
+  .ttl{ width: 12mm; text-align: right; }
+  .uprice{ display:block; font-weight: 700; }
   .totals{ margin-top: 1.2mm; }
   .row{ display:flex; justify-content: space-between; margin-top: 0.8mm; }
   .bold{ font-weight: 700; }
-
-  /* Pie */
   .footer{ text-align:center; margin-top: 2mm; font-weight:700; }
-
-  /* Botonera solo para pantalla */
-  .toolbar{ position: sticky; bottom: 0; padding: 8px; display:flex; gap:10px; background:#fff; border-top:1px solid #ddd; }
-  .btn{ appearance:none; border:1px solid #111; background:#111; color:#fff; border-radius:6px; padding:8px 10px; font-weight:600; cursor:pointer; }
-
-  /* ====== IMPRESIÓN ====== */
   @media print{
-    @page{
-      size: 58mm auto;      /* <— alto automático: corta exactamente al contenido */
-      margin: 0;            /* <— sin márgenes del sistema */
-    }
+    @page{ size: 58mm auto; margin: 0; }
     body, html{ width: 58mm; margin:0; padding:0; }
-    .toolbar{ display:none !important; }
   }
 </style>
 </head>
 <body>
   <div id="ticket" class="ticket">
-    <!-- Encabezado -->
     <div class="center">
-      <div class="title" id="storeName">MD MAGUEY DISTRIBUTOR</div>
+      <div class="title">MD MAGUEY DISTRIBUTOR</div>
       <div class="small">
         250 ROBINSON AVE #2 – BRONX NY 10465<br>
         Tel: 347-589-2676
       </div>
     </div>
-
     <hr>
-
-    <!-- Datos -->
     <div class="kv"><b>Fecha:</b> <span id="fecha"></span></div>
     <div class="kv"><b>Factura:</b> <span id="factura"></span></div>
     <div class="kv" id="clienteRow" style="display:none;"><b>Cliente:</b> <span id="cliente"></span></div>
     <div class="kv" id="dirRow" style="display:none;"><b>Dirección:</b> <span id="direccion"></span></div>
-
     <hr>
-
-    <!-- Tabla -->
     <table>
       <thead>
         <tr>
@@ -107,10 +78,7 @@
       </thead>
       <tbody id="itemsBody"></tbody>
     </table>
-
     <hr>
-
-    <!-- Totales -->
     <div class="totals">
       <div class="row">
         <span>Total Unidades</span>
@@ -121,82 +89,24 @@
         <span id="total">$0.00</span>
       </div>
     </div>
-
     <div class="footer">¡Gracias por su compra!</div>
   </div>
 
-  <!-- Botonera (pantalla) -->
-  <div class="toolbar">
-    <button class="btn" id="btnPrint">Imprimir (AirPrint)</button>
-  </div>
-
 <script>
-  /* ================= UTILIDADES ================= */
-  const qp = n => new URLSearchParams(location.search).get(n) || "";
-  const money = x => {
-    const n = Number(String(x||0).replace(/\s+/g,"").replace(/[^0-9.\-]/g,""));
-    return (isNaN(n) ? 0 : n).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
-  };
-  const split = s => String(s||"").split(/[;,]/).map(t=>t.trim()).filter(Boolean);
-  const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = val; };
+  /* ========== Aquí configuramos la URL de tu PDF ========= */
+  const pdfUrl = "https://raw.githubusercontent.com/elniude5-coder/invoise/main/factura_recibo_58mm%20(1).pdf";
+  /* ======================================================= */
 
-  /* ================= LECTURA QS ================= */
-  const fecha      = qp("fecha")      || new Date().toLocaleString();
-  const factura    = qp("factura")    || "0001";
-  const cliente    = qp("cliente")    || "";
-  const direccion  = qp("direccion")  || "";
+  window.addEventListener("load", () => {
+    // Creamos el link para PassPRNT
+    const starUrl = "starpassprnt://v1/print/nopreview?url="
+      + encodeURIComponent(pdfUrl)
+      + "&paperwidth=58"
+      + "&callback=" + encodeURIComponent(location.href);
 
-  const cantidades = split(qp("cantidades"));   // "2;1;3"
-  const descrips   = split(qp("servicios"));    // "Coca;Papas;Agua"
-  const precios    = split(qp("p_unit"));       // "50;75;25" o "$50; RD$75; 25"
-  const upcs       = split(qp("upcs"));         // opcional (no mostrado para ahorrar ancho)
-
-  /* ================= PINTAR HEADER ================= */
-  set("fecha",   fecha);
-  set("factura", factura);
-  if (cliente){ document.getElementById("clienteRow").style.display="block"; set("cliente", cliente); }
-  if (direccion){ document.getElementById("dirRow").style.display="block"; set("direccion", direccion); }
-
-  /* ================= ITEMS ================= */
-  const tbody = document.getElementById("itemsBody");
-  let units = 0, grand = 0;
-
-  const toNum = s => {
-    const cleaned = String(s||"").replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"");
-    const n = parseFloat(cleaned);
-    return isNaN(n) ? 0 : n;
-  };
-
-  const len = Math.max(cantidades.length, descrips.length, precios.length);
-  for (let i=0;i<len;i++){
-    const q   = toNum(cantidades[i]);
-    const dsc = (descrips[i] || "").slice(0, 28); // límite para que no salte ancho
-    const pu  = toNum(precios[i]);
-    const lt  = q * pu;
-
-    units += q;
-    grand += lt;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="qty">${q || ""}</td>
-      <td class="desc">${dsc}<span class="uprice">$${money(pu)}</span></td>
-      <td class="ttl">$${money(lt)}</td>
-    `;
-    tbody.appendChild(tr);
-  }
-
-  set("uTotal", units);
-  set("total", "$" + money(grand));
-
-  /* ================= IMPRESIÓN =================
-   * Sin alto fijo + @page size:58mm auto + margin:0
-   * => la impresora solo avanza hasta el final del contenido.
-   */
-
-
-  // Auto-imprimir si quieres (descomenta):
-  // window.addEventListener("load", () => setTimeout(doPrint, 250));
+    // En cuanto carga la página, abre PassPRNT
+    window.location.href = starUrl;
+  });
 </script>
 </body>
 </html>
