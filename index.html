@@ -1,43 +1,266 @@
-<!doctype html>
+<script>
+  /* --- Utilidades --- */
+  const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+  const split = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
+  // Convierte " $2.00 ", "RD$ 1,234.50", " 36.00 " -> 2, 1234.5, 36
+  const num = s => {
+    if (s == null) return 0;
+    const cleaned = String(s)
+      .replace(/\u00A0/g, " ")      // NBSP -> space
+      .replace(/\s+/g, "")          // quita espacios
+      .replace(/[^0-9.\-]/g, "");   // deja solo dígitos, punto y signo
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? 0 : n;
+  };
+
+  /* --- Leer parámetros --- */
+  const q = new URLSearchParams(location.search);
+  const pedido = q.get("boleta") || "";
+  const cliente = q.get("mesa") || "";
+  const direccion = q.get("direccion") || "";
+  const fecha = q.get("fecha") || "";
+  const estado = q.get("estado") || "";
+
+  const cantidades    = split(q.get("cantidades"));
+  const descripciones = split(q.get("servicios"));
+  const upcs          = split(q.get("upcs"));
+  const p_units       = split(q.get("p_unit"));   // puede venir como $2.00, RD$2.00, etc.
+
+  /* --- Header --- */
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setText("fecha_display", fecha || new Date().toLocaleDateString());
+  setText("factura_no", pedido || "-");
+  if (cliente){ document.getElementById("cliente_row").style.display="block"; document.getElementById("cliente_val").style.display="block"; setText("cliente_val", cliente); }
+  if (direccion){ document.getElementById("dir_row").style.display="block"; document.getElementById("dir_val").style.display="block"; setText("dir_val", direccion); }
+  if (estado){ setText("estado_view", estado); }
+
+  /* --- Filas --- */
+  const tbody = document.getElementById("rows");
+  let units = 0, grand = 0;
+  const len = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
+
+  for (let i=0;i<len;i++){
+    const qty   = num(cantidades[i]);   // limpia "1" o " 1 "
+    const unit  = num(p_units[i]);      // limpia "$2.00", "RD$2.00", etc.
+    const line  = qty * unit;
+
+    units += qty;
+    grand += line;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="qty-col">${qty || ""}</td>
+      <td class="upc-col">${upcs[i] || ""}</td>
+      <td class="desc-col">
+        ${(descripciones[i] || "")}${descripciones[i] ? "<br/>" : ""}<span class="price-inline">$${fmt(unit)}</span>
+      </td>
+      <td class="total-col">$${fmt(line)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  /* --- Totales --- */
+  setText("units", units);
+  setText("grand", "$" + fmt(grand));
+</script>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Imprimir factura 58mm – PassPRNT</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=80mm, initial-scale=1.0" />
+  <title>Ticket de Compra</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 24px; }
-    button { padding: 12px 16px; font-size: 16px; cursor: pointer; }
-    small { color:#666; display:block; margin-top:8px; }
+    /* ====== Estilos para 80mm térmica ====== */
+    :root{
+      --w: 80mm;
+      --font: "Courier New", monospace;
+      --fs: 3.0mm;         /* tamaño base */
+      --fs-head: 4.2mm;    /* título */
+      --fs-sub: 2.8mm;     /* subtítulos y celdas */
+      --gap: 1.6mm;
+      --line: #000;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; padding:0;
+      background:#fff; color:#000;
+      font-family:var(--font);
+      font-size:var(--fs);
+    }
+    #ticket{
+      width: var(--w);
+      max-width: var(--w);
+      padding: 2mm 2mm 1mm;
+      margin: 0 auto;
+    }
+
+    /* Encabezado */
+    .store-header{ text-align:center; margin-bottom: 2mm; }
+    .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; letter-spacing: .3mm; }
+    .store-details{ font-size: var(--fs-sub); line-height:1.2; margin-top: .6mm; }
+
+    /* Tabla */
+    table{ width:100%; border-collapse: collapse; margin-top: 2mm; }
+    thead th{
+      text-align:left; font-weight:700; font-size: var(--fs);
+      border-bottom: 0.3mm solid var(--line);
+      padding-bottom: 0.6mm;
+    }
+    td{ font-size: var(--fs-sub); vertical-align: top; padding-top: .8mm; }
+
+    .qty-col{ width: 10mm; text-align: right; padding-right: 1mm; }
+    .upc-col{ width: 28mm; }
+    .desc-col{ width: 26mm; }
+    .total-col{ width: 12mm; text-align: right; }
+
+    .price-inline{ display:block; font-weight:700; } /* precio debajo */
+    .row{ border-bottom: 0.3mm dashed #000; }
+    .row:last-child{ border-bottom: none; }
+
+    /* Totales */
+    .totals{ margin-top: 2mm; font-size: var(--fs); }
+    .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; }
+    .bold{ font-weight:700; }
+
+    /* Pie */
+    .footer{ text-align:center; margin-top: 2mm; font-size: var(--fs-sub); font-weight:700; }
+
+    /* Impresión */
+    @media print{
+      html, body{ width: var(--w); }
+      #printBtn{ display:none !important; }
+      @page{ size: var(--w) auto; margin: 0; }
+    }
   </style>
 </head>
 <body>
-  <h2>Prueba de impresión directa</h2>
+  <div id="ticket">
+    <!-- Encabezado empresa -->
+    <div class="store-header">
+      <div class="store-title">MD MAGUEY DISTRIBUTOR</div>
+      <div class="store-details">
+        250 ROBINSON AVE #2 · BRONX NY 10465<br>
+        Tel: 347-589-2676
+      </div>
+      <div class="store-details" style="text-align:left; margin-top:1mm;">
+        Fecha: <span id="fecha_text"></span><br>
+        Factura No.: <span id="factura_text"></span><br>
+        <span id="cliente_wrap" style="display:none;">Cliente: <span id="cliente_text"></span><br></span>
+        <span id="dir_wrap" style="display:none;">Dirección: <span id="dir_text"></span></span>
+      </div>
+    </div>
 
-  <button id="btnPrint">Imprimir factura en 58 mm</button>
-  <small>Usa Star PassPRNT y tu PDF del repositorio.</small>
+    <!-- Tabla -->
+    <table>
+      <thead>
+        <tr>
+          <th class="qty-col">QTY</th>
+          <th class="upc-col">UPC</th>
+          <th class="desc-col">DESCRIPCIÓN</th>
+          <th class="total-col">TOTAL</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <!-- Totales -->
+    <div class="totals">
+      <div class="total-line">
+        <span>Total Unidades</span>
+        <span id="units">0</span>
+      </div>
+      <div class="total-line bold">
+        <span>TOTAL A PAGAR</span>
+        <span id="grand">$0.00</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      Gracias por su compra
+      <div id="estado_text" style="margin-top:1mm;"></div>
+    </div>
+  </div>
 
   <script>
-    // 👇 TU PDF REAL (RAW de GitHub)
-    const PDF_URL = "https://raw.githubusercontent.com/elniude5-coder/invoise/main/factura_recibo_58mm.pdf";
+    // ===== Utilidades =====
+    const fmt = v => Number(v||0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+    const split = s => String(s||"").split(",").map(x=>x.trim()).filter(x=>x!=="");
+    // Limpia "$2.00", "RD$ 1,234.50", etc.
+    const num = s => {
+      const cleaned = String(s||"").replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"");
+      const n = parseFloat(cleaned);
+      return isNaN(n) ? 0 : n;
+    };
+    const setText = (id, val) => { const el=document.getElementById(id); if(el) el.textContent = val; };
 
-    function openPassPRNT(url){
-      // Esquema correcto de iOS: starpassprnt://
-      const passUrl =
-        "starpassprnt://v1/print/nopreview?url=" + encodeURIComponent(url) +
-        "&paperwidth=58"; // ancho en mm (opcional)
+    // ===== Parámetros =====
+    const q = new URLSearchParams(location.search);
+    const boleta = q.get("boleta") || "";
+    const mesa = q.get("mesa") || "";
+    const direccion = q.get("direccion") || "";
+    const fecha = q.get("fecha") || new Date().toLocaleDateString();
+    const estado = q.get("estado") || "";
 
-      // Intento abrir PassPRNT
-      const t = setTimeout(() => {
-        alert("No se pudo abrir PassPRNT. Verifica que esté instalada y con la impresora seleccionada.");
-      }, 2000);
+    let cantidades    = split(q.get("cantidades"));
+    let descripciones = split(q.get("servicios"));
+    let upcs          = split(q.get("upcs"));
+    let p_units       = split(q.get("p_unit"));  // precio unitario (ideal: sin $)
 
-      window.location.href = passUrl;
+    // ===== Header =====
+    setText("fecha_text", fecha);
+    setText("factura_text", boleta || "-");
+    if(mesa){
+      document.getElementById("cliente_wrap").style.display = "inline";
+      setText("cliente_text", mesa);
+    }
+    if(direccion){
+      document.getElementById("dir_wrap").style.display = "inline";
+      setText("dir_text", direccion);
+    }
+    setText("estado_text", estado);
 
-      // Si la página cambia de estado limpiamos el timeout
-      window.addEventListener("pagehide", () => clearTimeout(t), { once:true });
+    // ===== Filas =====
+    const tbody = document.getElementById("tbody");
+    let units=0, grand=0;
+    const n = Math.max(descripciones.length, upcs.length, p_units.length, cantidades.length);
+
+    for(let i=0;i<n;i++){
+      const qty  = num(cantidades[i]);
+      const upc  = upcs[i] || "";
+      const name = descripciones[i] || "";
+      const unit = num(p_units[i]);         // limpia por si llega "RD$2.00"
+      const line = qty * unit;
+
+      units += qty;
+      grand += line;
+
+      const tr = document.createElement("tr");
+      tr.className = "row";
+      tr.innerHTML = `
+        <td class="qty-col">${qty || ""}</td>
+        <td class="upc-col">${upc}</td>
+        <td class="desc-col">${name}<span class="price-inline">$${fmt(unit)}</span></td>
+        <td class="total-col">$${fmt(line)}</td>
+      `;
+      tbody.appendChild(tr);
     }
 
-    document.getElementById("btnPrint").addEventListener("click", () => openPassPRNT(PDF_URL));
+    // ===== Totales =====
+    setText("units", units);
+    setText("grand", "$"+fmt(grand));
+
+    // ===== Imprimir =====
+    function tryPrint(){ setTimeout(() => window.print(), 250); }
+    if (document.readyState === "complete") tryPrint(); else window.addEventListener("load", tryPrint);
+
+    // Botón de respaldo (si el navegador bloquea print)
+    const btn=document.createElement("button");
+    btn.id="printBtn";
+    btn.textContent="Imprimir";
+    btn.style="position:fixed;right:8px;bottom:8px;padding:6px 10px;border:1px solid #000;background:#fff;color:#000;border-radius:6px;cursor:pointer;z-index:9999";
+    btn.onclick=()=>window.print();
+    document.body.appendChild(btn);
   </script>
 </body>
 </html>
+)
