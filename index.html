@@ -1,186 +1,129 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=58mm, initial-scale=1.0" />
-  <title>Ticket 58mm</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ticket 58mm – PassPRNT</title>
   <style>
-    :root{
-      --w: 58mm;                       /* ancho del rollo */
-      --w-print: 48mm;                 /* ancho útil de impresión */
-      --font: "Courier New", monospace;
-      --fs: 2.6mm;       /* base */
-      --fs-head: 3.6mm;  /* título */
-      --fs-sub: 2.3mm;   /* celdas y subtítulos */
-      --line: #000;
+    body { margin:0; background:#fff; font-family: monospace; }
+    .ticket { width:58mm; margin:10px auto; font-size:11px; line-height:1.3; }
+    .toolbar { position:sticky; bottom:0; display:flex; gap:12px; padding:10px; background:#fff; border-top:1px solid #ddd; }
+    .center { text-align:center; }
+    hr { border:0; border-top:1px dashed #000; margin:6px 0; }
+    @media print {
+      @page { size:58mm auto; margin:5mm; }
+      .toolbar { display:none; }
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0; padding:0; background:#fff; color:#000;
-      font-family:var(--font); font-size:var(--fs);
-    }
-    #ticket{
-      width: var(--w-print); max-width: var(--w-print);
-      padding: 2mm 1.5mm 1.5mm; margin: 0 auto;
-    }
-
-    /* Encabezado */
-    .store-header{ text-align:center; margin-bottom: 1mm; }
-    .store-title{ font-size: var(--fs-head); font-weight:700; margin: .2mm 0 0 0; letter-spacing:.2mm; }
-    .store-details{ font-size: var(--fs-sub); line-height:1.2; margin-top: .5mm; }
-
-    /* Tabla */
-    table{ width:100%; border-collapse:collapse; margin-top: 1mm; }
-    thead th{
-      text-align:left; font-weight:700; font-size: var(--fs-sub);
-      border-bottom: 0.2mm solid var(--line);
-      padding-bottom: .4mm;
-    }
-    td{ font-size: var(--fs-sub); vertical-align:top; padding-top: .5mm; }
-
-    /* Columnas (ajustadas a 48mm) */
-    .qty-col{ width: 6mm; text-align:right; padding-right: 0.5mm; }
-    .upc-col{ width: 12mm; }
-    .desc-col{ width: 20mm; }
-    .total-col{ width: 10mm; text-align:right; }
-
-    .price-inline{ display:block; font-weight:700; } /* precio debajo del nombre */
-    .row{ border-bottom: 0.2mm dashed #000; }
-    .row:last-child{ border-bottom:none; }
-
-    /* Totales */
-    .totals{ margin-top: 1mm; font-size: var(--fs); }
-    .total-line{ display:flex; justify-content: space-between; margin-top: .6mm; }
-    .bold{ font-weight:700; }
-
-    /* Pie */
-    .footer{ text-align:center; margin-top: 1.2mm; font-size: var(--fs-sub); font-weight:700; }
-
-    /* Impresión */
-    @media print{
-      html, body{ width: var(--w-print); }
-      #actions{ display:none !important; }
-      @page{ size: var(--w-print) auto; margin: 0; }
-    }
-
-    /* Botonera en pantalla */
-    #actions{ position:fixed; left:6px; right:6px; bottom:6px; display:flex; gap:6px; z-index:9999; }
-    .btn{ flex:1; padding:8px 10px; border:1px solid #000; background:#fff; color:#000; border-radius:8px; font-weight:700; text-align:center; cursor:pointer; }
   </style>
 </head>
 <body>
-  <div id="ticket">
-    <!-- Encabezado empresa -->
-    <div class="store-header">
-      <div class="store-title">MD MAGUEY DISTRIBUTOR</div>
-      <div class="store-details">
-        250 ROBINSON AVE #2 · BRONX NY 10465<br>Tel: 347-589-2676
-      </div>
-      <div class="store-details" style="text-align:left; margin-top:1mm;">
-        Fecha: <span id="fecha_text"></span><br>
-        Factura No.: <span id="factura_text"></span><br>
-        <span id="cliente_wrap" style="display:none;">Cliente: <span id="cliente_text"></span><br></span>
-        <span id="dir_wrap" style="display:none;">Dirección: <span id="dir_text"></span></span>
-      </div>
+  <div id="ticket" class="ticket">
+    <div class="center">
+      <b>MD MAGUEY DISTRIBUTOR</b><br/>
+      250 ROBINSON AVE #2 - BRONX NY 10465<br/>
+      Tel: 347-589-2676
     </div>
-
-    <!-- Tabla -->
-    <table>
-      <thead>
-        <tr>
-          <th class="qty-col">QTY</th>
-          <th class="upc-col">UPC</th>
-          <th class="desc-col">DESCRIPCIÓN</th>
-          <th class="total-col">TOTAL</th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-
-    <!-- Totales -->
-    <div class="totals">
-      <div class="total-line"><span>Total Unidades</span><span id="units">0</span></div>
-      <div class="total-line bold"><span>TOTAL A PAGAR</span><span id="grand">$0.00</span></div>
-    </div>
-
-    <div class="footer">
-      ¡Gracias por su compra!
-      <div id="estado_view" style="margin-top:1mm;"></div>
-    </div>
+    <hr/>
+    Fecha: <span id="fecha"></span><br/>
+    Factura: <span id="factura"></span><br/>
+    Cliente: <span id="cliente"></span><br/>
+    <hr/>
+    <b>QTY  DESCRIPCIÓN             TOTAL</b><br/>
+    <div id="itemsPreview"></div>
+    <hr/>
+    Total Unidades: <span id="uTotal"></span><br/>
+    <b>TOTAL A PAGAR: $<span id="total"></span></b><br/>
+    <div class="center" style="margin-top:6px;">¡Gracias por su compra!</div>
   </div>
 
-  <!-- Botonera manual -->
-  <div id="actions">
-    <button id="btnStar" class="btn">Imprimir Star</button>
-    <button id="btnNavegador" class="btn">Imprimir navegador</button>
+  <div class="toolbar">
+    <button id="btnTXT">Imprimir con PassPRNT (texto)</button>
   </div>
 
   <script>
-    const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
-    const split = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
-    const num = s => {
-      if (s == null) return 0;
-      const cleaned = String(s).replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"");
-      const n = parseFloat(cleaned);
-      return isNaN(n) ? 0 : n;
-    };
+    function qp(n){ const u=new URLSearchParams(location.search); return u.get(n)||""; }
+    function padL(s,n){ s=String(s); return s.length>=n?s:" ".repeat(n-s.length)+s; }
+    function padR(s,n){ s=String(s); return s.length>=n? s.slice(0,n): s+" ".repeat(n-s.length); }
+    function money(x){ const n=Number(String(x).replace(',','.')); return isNaN(n)?"0.00":n.toFixed(2); }
 
-    /* --- Leer parámetros --- */
-    const q = new URLSearchParams(location.search);
-    const pedido     = q.get("boleta") || "";
-    const cliente    = q.get("mesa") || "";
-    const direccion  = q.get("direccion") || "";
-    const fecha      = q.get("fecha") || new Date().toLocaleDateString();
-    const estado     = q.get("estado") || "";
-    const cantidades = split(q.get("cantidades"));
-    const descs      = split(q.get("servicios"));
-    const upcs       = split(q.get("upcs"));
-    const p_units    = split(q.get("p_unit"));
-
-    const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent = val; };
-    set("fecha_text", fecha);
-    set("factura_text", pedido || "-");
-    if (cliente){ document.getElementById("cliente_wrap").style.display="inline"; set("cliente_text", cliente); }
-    if (direccion){ document.getElementById("dir_wrap").style.display="inline"; set("dir_text", direccion); }
-    set("estado_view", estado);
-
-    const tbody = document.getElementById("rows");
-    let units = 0, grand = 0;
-    const len = Math.max(descs.length, p_units.length, cantidades.length, upcs.length);
-    for (let i=0;i<len;i++){
-      const qty  = (cantidades[i] === undefined || cantidades[i] === "" ? 1 : num(cantidades[i]));
-      const unit = num(p_units[i]);
-      const line = qty * unit;
-      units += qty; grand += line;
-
-      const tr = document.createElement("tr");
-      tr.className = "row";
-      tr.innerHTML = `
-        <td class="qty-col">${qty || ""}</td>
-        <td class="upc-col">${upcs[i] || ""}</td>
-        <td class="desc-col">${(descs[i] || "")}${descs[i] ? "<br/>" : ""}<span class="price-inline">$${fmt(unit)}</span></td>
-        <td class="total-col">$${fmt(line)}</td>
-      `;
-      tbody.appendChild(tr);
-    }
-    set("units", units);
-    set("grand", "$"+fmt(grand));
-
-    const makePassprntUrl = (docUrl) =>
-      `starpassprnt://v1/print/nopreview?url=${encodeURIComponent(docUrl)}&back=${encodeURIComponent("appsheet://")}`;
-
-    if (q.get("autoprint") === "1") {
-      const currentUrl = location.origin + location.pathname + location.search;
-      location.href = makePassprntUrl(currentUrl);
+    function parseItemsParam(itemsStr){
+      if(!itemsStr) return [];
+      return itemsStr.split(";").filter(Boolean).map(row=>{
+        const [q="",d="",t=""] = row.split("|");
+        return { q, d, t };
+      });
     }
 
-    document.getElementById("btnStar").onclick = () => {
-      const currentUrl = location.origin + location.pathname + location.search;
-      location.href = makePassprntUrl(currentUrl);
-    };
-    document.getElementById("btnNavegador").onclick = () => {
-      window.print();
-    };
+    function buildPlainTextTicket(){
+      const fecha = qp("fecha") || new Date().toLocaleString();
+      const factura = qp("factura") || "0001";
+      const cliente = qp("cliente") || "Cliente";
+      const total   = qp("total")   || "0.00";
+      const unidades= qp("unidades")|| "";
+      const items   = parseItemsParam(qp("items"));
+
+      const lines = [];
+      lines.push(padR("   MD MAGUEY DISTRIBUTOR",32));
+      lines.push("250 ROBINSON AVE #2 - BRONX NY");
+      lines.push("Tel: 347-589-2676");
+      lines.push("--------------------------------");
+      lines.push("Fecha: " + fecha);
+      lines.push("Factura: " + factura);
+      lines.push("Cliente: " + cliente);
+      lines.push("--------------------------------");
+      lines.push("QTY  DESCRIPCION         TOTAL");
+
+      if(items.length){
+        items.forEach(it=>{
+          const left  = padR(padR(it.q,3)+"  "+padR(it.d,18),27);
+          const right = padL("$"+money(it.t),5);
+          lines.push(left+right);
+        });
+      } else {
+        const left  = padR(padR(1,3)+"  "+padR("Item demo",18),27);
+        const right = padL("$"+money(total),5);
+        lines.push(left+right);
+      }
+
+      lines.push("--------------------------------");
+      if(unidades) lines.push("Total Unidades: " + unidades);
+      lines.push(padR("TOTAL A PAGAR:",22) + padL("$"+money(total),10));
+      lines.push("--------------------------------");
+      lines.push("  ¡Gracias por su compra!");
+      return lines.join("\n") + "\n";
+    }
+
+    (function fillPreview(){
+      const fecha = qp("fecha") || new Date().toLocaleString();
+      const factura = qp("factura") || "0001";
+      const cliente = qp("cliente") || "Cliente";
+      const total   = qp("total")   || "0.00";
+      const unidades= qp("unidades")|| "";
+      document.getElementById("fecha").textContent = fecha;
+      document.getElementById("factura").textContent = factura;
+      document.getElementById("cliente").textContent = cliente;
+      document.getElementById("total").textContent = money(total);
+      document.getElementById("uTotal").textContent = unidades;
+      const items = parseItemsParam(qp("items"));
+      const div = document.getElementById("itemsPreview");
+      div.innerHTML = items.length
+        ? items.map(it => `${it.q}    ${it.d}    $${money(it.t)}`).join("<br/>")
+        : "1    Item demo            $" + money(total);
+    })();
+
+    document.getElementById('btnTXT').addEventListener('click', () => {
+      const text = buildPlainTextTicket();
+      const enc  = encodeURIComponent(text);
+      const schemes = [
+        `starpassprnt://v1/print?text=${enc}&encoding=UTF8`,
+        `starpassprnt://v1/print?message=${enc}&encoding=UTF8`,
+        `starpassprnt://v1/print?url=${encodeURIComponent('data:text/plain;charset=utf-8,'+text)}`
+      ];
+      let i=0;
+      const tryOpen=()=>{ if(i>=schemes.length){ alert("No se pudo abrir PassPRNT. Verifica que esté instalada y la SM-S230i seleccionada (2\"/384 dots)."); return; }
+        window.location.href = schemes[i++]; setTimeout(tryOpen,800); };
+      tryOpen();
+    });
   </script>
 </body>
 </html>
