@@ -1,27 +1,16 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<title>Test PDF PassPRNT</title>
-</head>
-<body>
-  <h2>Prueba PDF con PassPRNT</h2>
-  <button onclick="printPDF()">Enviar PDF</button>
-
-<script>
-function printPDF(){
-  // PDF mínimo en base64 (1 página con texto “Hola PDF”)
-  const base64pdf = 
-    "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PC9UeXBlIC9DYXRhbG9nL1BhZ2VzIDIgMCBSCj4+CmVuZG9iagoyIDAgb2JqCjw8L1R5cGUgL1BhZ2VzL0tpZHMgWzMgMCBSXS9Db3VudCAxCj4+CmVuZG9iagozIDAgb2JqCjw8L1R5cGUgL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94IFswIDAgMjAwIDIwMF0vQ29udGVudHMgNCAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwvTGVuZ3RoIDQ1Pj4Kc3RyZWFtCkJUCjcwIDUwIFRECi9Gb250IDExIFRmCjEwMCA3MCBUZAooSG9sYSBQREYpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKNSAwIG9iago8PC9UeXBlIC9Gb250L1N1YnR5cGUgL1R5cGUxL05hbWUgL0YxL0Jhc2VGb250IC9IZWx2ZXRpY2EvRW5jb2RpbmcgL1dpbkFuc2lFbmNvZGluZwo+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMTExIDAwMDAwIG4gCjAwMDAwMDAxODMgMDAwMDAgbiAKMDAwMDAwMDI4MCAwMDAwMCBuIAowMDAwMDAwNDQ5IDAwMDAwIG4gCjAwMDAwMDA1NTAgMDAwMDAgbiAKdHJhaWxlcgo8PC9Sb290IDEgMCBSL0luZm8gNiAwIFIKPj4Kc3RhcnR4cmVmCjY2NQolJUVPRgo=";
-
-  // URL tipo data:application/pdf;base64
-  const dataUrl = `data:application/pdf;base64,${base64pdf}`;
-  
-  // Llamada PassPRNT con url=
-  const u = `starpassprnt://v1/print?url=${encodeURIComponent(dataUrl)}&encoding=UTF8&back=${encodeURIComponent(location.href)}`;
-
-  window.location.href = u;
-}
-</script>
-</body>
-</html>
+MD MAGUEY DISTRIBUTOR
+250 ROBINSON AVE #2 - BRONX NY 10465
+Tel: 347-589-2676
+--------------------------------
+Fecha: 01-09-2025
+Factura: F0001
+Cliente: Juan Perez
+--------------------------------
+QTY  DESCRIPCION         TOTAL
+2    CocaCola 12oz       5.00
+1    Galletas            7.50
+--------------------------------
+Total Unidades: 3
+TOTAL A PAGAR:     12.50
+--------------------------------
+Gracias por su compra!
