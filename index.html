@@ -1,112 +1,84 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=58mm, initial-scale=1, maximum-scale=1">
-<title>Ticket 58mm – Auto Print</title>
-<style>
-  :root{
-    --w: 58mm;
-    --font: ui-monospace, Menlo, Consolas, "Courier New", monospace;
-    --fs: 2.8mm;
-    --fs-sm: 2.4mm;
-    --fs-lg: 3.4mm;
-    --line-h: 1.25;
-    --ink: #000;
-  }
-  *{ box-sizing: border-box; color: var(--ink); }
-  html, body{
-    margin: 0; padding: 0; background: #fff;
-    width: var(--w);
-    -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-  }
-  .ticket{
-    width: var(--w);
-    font-family: var(--font);
-    font-size: var(--fs);
-    line-height: var(--line-h);
-    padding: 2mm 2mm 1mm;
-  }
-  .center{ text-align: center; }
-  .title{ font-size: var(--fs-lg); font-weight: 700; margin: 0 0 0.8mm; }
-  .small{ font-size: var(--fs-sm); }
-  .kv{ margin-top: 1mm; }
-  .kv b{ display:inline-block; min-width: 15mm; }
-  hr{ border:0; border-top: 0.2mm dashed #000; margin: 1.6mm 0; }
-  table{ width: 100%; border-collapse: collapse; }
-  thead th{
-    font-weight: 700; text-align: left; border-bottom: 0.2mm solid #000; padding-bottom: 0.6mm;
-  }
-  td{ vertical-align: top; padding-top: 0.8mm; }
-  .qty{ width: 8mm; text-align: right; padding-right: 1mm; }
-  .desc{ width: 34mm; }
-  .ttl{ width: 12mm; text-align: right; }
-  .uprice{ display:block; font-weight: 700; }
-  .totals{ margin-top: 1.2mm; }
-  .row{ display:flex; justify-content: space-between; margin-top: 0.8mm; }
-  .bold{ font-weight: 700; }
-  .footer{ text-align:center; margin-top: 2mm; font-weight:700; }
-  @media print{
-    @page{ size: 58mm auto; margin: 0; }
-    body, html{ width: 58mm; margin:0; padding:0; }
-  }
-</style>
-</head>
-<body>
-  <div id="ticket" class="ticket">
-    <div class="center">
-      <div class="title">MD MAGUEY DISTRIBUTOR</div>
-      <div class="small">
-        250 ROBINSON AVE #2 – BRONX NY 10465<br>
-        Tel: 347-589-2676
-      </div>
-    </div>
-    <hr>
-    <div class="kv"><b>Fecha:</b> <span id="fecha"></span></div>
-    <div class="kv"><b>Factura:</b> <span id="factura"></span></div>
-    <div class="kv" id="clienteRow" style="display:none;"><b>Cliente:</b> <span id="cliente"></span></div>
-    <div class="kv" id="dirRow" style="display:none;"><b>Dirección:</b> <span id="direccion"></span></div>
-    <hr>
-    <table>
-      <thead>
-        <tr>
-          <th class="qty">QTY</th>
-          <th class="desc">DESCRIPCIÓN</th>
-          <th class="ttl">TOTAL</th>
-        </tr>
-      </thead>
-      <tbody id="itemsBody"></tbody>
-    </table>
-    <hr>
-    <div class="totals">
-      <div class="row">
-        <span>Total Unidades</span>
-        <span id="uTotal">0</span>
-      </div>
-      <div class="row bold">
-        <span>TOTAL A PAGAR</span>
-        <span id="total">$0.00</span>
-      </div>
-    </div>
-    <div class="footer">¡Gracias por su compra!</div>
-  </div>
-
 <script>
-  /* ========== Aquí configuramos la URL de tu PDF ========= */
-  const pdfUrl = "https://raw.githubusercontent.com/elniude5-coder/invoise/main/factura_recibo_58mm%20(1).pdf";
-  /* ======================================================= */
+  // Lee parámetros de la URL
+  const q = new URLSearchParams(location.search);
+
+  // Helper seguro
+  const get = (k, d="") => q.has(k) ? q.get(k) : d;
+
+  // Campos simples
+  const boleta   = get("boleta");
+  const mesa     = get("mesa");
+  const direccion= get("direccion");
+  const fecha    = get("fecha");
+  const estado   = get("estado") || "";
+  const hora     = get("fecha_entrega") || "";
+
+  // Listas (vienen "1, 2, 3")
+  const splitList = (s) =>
+    s ? s.split(",").map(x => x.trim()).filter(Boolean) : [];
+
+  const upcs        = splitList(get("upcs"));
+  const cantidades  = splitList(get("cantidades"));
+  const descripciones = splitList(get("servicios"));
+  const preciosUnit = splitList(get("p_unit")); // ya vienen sin símbolos
+
+  // Rellena cabecera
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+  setText("fecha",    fecha || new Date().toLocaleDateString());
+  setText("factura",  boleta || "");
+  if (mesa) {
+    document.getElementById("clienteRow").style.display = "block";
+    setText("cliente", decodeURIComponent(mesa));
+  }
+  if (direccion) {
+    document.getElementById("dirRow").style.display = "block";
+    setText("direccion", decodeURIComponent(direccion));
+  }
+
+  // Construye items
+  const tbody = document.getElementById("itemsBody");
+  let totalUnidades = 0;
+  let total = 0;
+
+  const n = Math.max(cantidades.length, descripciones.length, preciosUnit.length, upcs.length);
+  for (let i = 0; i < n; i++) {
+    const qty   = parseFloat(cantidades[i] || "0") || 0;
+    const name  = (descripciones[i] || "").trim();
+    const upc   = (upcs[i] || "").trim();
+    const punit = parseFloat((preciosUnit[i] || "0").replace(/\s/g, "")) || 0; // por si queda algún espacio
+    const lineT = qty * punit;
+
+    totalUnidades += qty;
+    total += lineT;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="qty">${qty}</td>
+      <td class="desc">
+        ${name ? name : ""}
+        ${punit ? `<span class="uprice">$${punit.toFixed(2)}</span>` : ""}
+      </td>
+      <td class="ttl">$${lineT.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  setText("uTotal", totalUnidades);
+  setText("total", `$${total.toFixed(2)}`);
+
+  // === PassPRNT ===
+  // Envia la MISMA URL (con params) para que la impresora cargue e imprima este ticket
+  // Si tu PassPRNT soporta HTML directo, esto funciona. Si exige PDF, ver Nota más abajo.
+  const printUrl = location.href;
 
   window.addEventListener("load", () => {
-    // Creamos el link para PassPRNT
     const starUrl = "starpassprnt://v1/print/nopreview?url="
-      + encodeURIComponent(pdfUrl)
+      + encodeURIComponent(printUrl)
       + "&paperwidth=58"
       + "&callback=" + encodeURIComponent(location.href);
 
-    // En cuanto carga la página, abre PassPRNT
-    window.location.href = starUrl;
+    // Lanza PassPRNT
+    location.href = starUrl;
   });
 </script>
-</body>
-</html>
