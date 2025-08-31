@@ -1,138 +1,37 @@
 <!doctype html>
-<html lang="es">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ticket 58mm – PassPRNT</title>
-  <style>
-    body { margin:0; background:#fff; font-family: monospace; }
-    .ticket { width:58mm; margin:10px auto 72px; font-size:11px; line-height:1.3; }
-    .center { text-align:center; }
-    hr { border:0; border-top:1px dashed #000; margin:6px 0; }
-    .toolbar { position:fixed; bottom:0; left:0; right:0; display:flex; gap:12px; padding:10px; background:#fff; border-top:1px solid #ddd; justify-content:center; }
-    button { border:1px solid #111; padding:8px 12px; background:#111; color:#fff; border-radius:6px; font-weight:600; cursor:pointer; }
-    button.secondary { background:#fff; color:#111; }
-    @media print {
-      @page { size:58mm auto; margin:5mm; }
-      .toolbar { display:none; }
-    }
-  </style>
+  <meta charset="utf-8">
+  <title>Test PassPRNT</title>
 </head>
 <body>
-  <div id="ticket" class="ticket">
-    <div class="center">
-      <b>MD MAGUEY DISTRIBUTOR</b><br/>
-      250 ROBINSON AVE #2 - BRONX NY 10465<br/>
-      Tel: 347-589-2676
-    </div>
-    <hr/>
-    Fecha: <span id="fecha"></span><br/>
-    Factura: <span id="factura"></span><br/>
-    Cliente: <span id="cliente"></span><br/>
-    <hr/>
-    <b>QTY  DESCRIPCIÓN             TOTAL</b><br/>
-    <div id="itemsPreview"></div>
-    <hr/>
-    Total Unidades: <span id="uTotal"></span><br/>
-    <b>TOTAL A PAGAR: $<span id="total"></span></b><br/>
-    <div class="center" style="margin-top:6px;">¡Gracias por su compra!</div>
-  </div>
-
-  <div class="toolbar">
-    <button id="btnDirect">Imprimir directo</button>
-    <button id="btnPreview" class="secondary">Vista previa</button>
-  </div>
+  <h3>Prueba directa PassPRNT</h3>
+  <button onclick="print()">Imprimir Ticket</button>
 
   <script>
-    // === Helpers ===
-    function qp(n){ const u=new URLSearchParams(location.search); return u.get(n)||""; }
-    function padL(s,n){ s=String(s); return s.length>=n?s:" ".repeat(n-s.length)+s; }
-    function padR(s,n){ s=String(s); return s.length>=n? s.slice(0,n): s+" ".repeat(n-s.length); }
-    function money(x){ const n=Number(String(x).replace(',','.')); return isNaN(n)?"0.00":n.toFixed(2); }
-    function parseItemsParam(itemsStr){
-      if(!itemsStr) return [];
-      return itemsStr.split(";").filter(Boolean).map(row=>{
-        const [q="",d="",t=""] = row.split("|");
-        return { q, d, t };
-      });
-    }
+    function print() {
+      const text = `
+MD MAGUEY DISTRIBUTOR
+250 ROBINSON AVE #2 - BRONX NY 10465
+Tel: 347-589-2676
+------------------------------
+Fecha: 01-09-2025
+Factura: F0001
+Cliente: Juan Perez
+------------------------------
+QTY DESCRIPCION        TOTAL
+2  CocaCola 12oz       5.00
+1  Galletas            7.50
+------------------------------
+Total Unidades: 3
+TOTAL A PAGAR: 12.50
+------------------------------
+Gracias por su compra!
+      `.trim();
 
-    // === Ticket plain text ===
-    function buildPlainTextTicket(){
-      const fecha    = qp("fecha")    || new Date().toLocaleString();
-      const factura  = qp("factura")  || "0001";
-      const cliente  = qp("cliente")  || "Cliente";
-      const total    = qp("total")    || "0.00";
-      const unidades = qp("unidades") || "";
-      const items    = parseItemsParam(qp("items"));
-
-      const lines = [];
-      lines.push(padR("   MD MAGUEY DISTRIBUTOR",32));
-      lines.push("250 ROBINSON AVE #2 - BRONX NY");
-      lines.push("Tel: 347-589-2676");
-      lines.push("--------------------------------");
-      lines.push("Fecha: " + fecha);
-      lines.push("Factura: " + factura);
-      lines.push("Cliente: " + cliente);
-      lines.push("--------------------------------");
-      lines.push("QTY  DESCRIPCION         TOTAL");
-
-      if(items.length){
-        items.forEach(it=>{
-          const left  = padR(padR(it.q,3)+"  "+padR(it.d,18),27);
-          const right = padL("$"+money(it.t),5);
-          lines.push(left+right);
-        });
-      } else {
-        const left  = padR(padR(1,3)+"  "+padR("Item demo",18),27);
-        const right = padL("$"+money(total),5);
-        lines.push(left+right);
-      }
-
-      lines.push("--------------------------------");
-      if(unidades) lines.push("Total Unidades: " + unidades);
-      lines.push(padR("TOTAL A PAGAR:",22) + padL("$"+money(total),10));
-      lines.push("--------------------------------");
-      lines.push("  ¡Gracias por su compra!");
-      return lines.join("\n") + "\n";
-    }
-
-    // === Vista previa HTML ===
-    (function fillPreview(){
-      const fecha    = qp("fecha")    || new Date().toLocaleString();
-      const factura  = qp("factura")  || "0001";
-      const cliente  = qp("cliente")  || "Cliente";
-      const total    = qp("total")    || "0.00";
-      const unidades = qp("unidades") || "";
-      document.getElementById("fecha").textContent = fecha;
-      document.getElementById("factura").textContent = factura;
-      document.getElementById("cliente").textContent = cliente;
-      document.getElementById("total").textContent = money(total);
-      document.getElementById("uTotal").textContent = unidades;
-      const items = parseItemsParam(qp("items"));
-      const div = document.getElementById("itemsPreview");
-      div.innerHTML = items.length
-        ? items.map(it => `${it.q}    ${it.d}    $${money(it.t)}`).join("<br/>")
-        : "1    Item demo            $" + money(total);
-    })();
-
-    // === PassPRNT print ===
-    function openPassPRNT({preview=false}={}){
-      let text = buildPlainTextTicket().replace(/\n/g, "\r\n");
       const enc = encodeURIComponent(text);
-
-      const path = preview ? "print" : "print/nopreview";
-
-      // IMPORTANTE: usar siempre tu GitHub Pages como callback
-      const callback = "https://elniude5-coder.github.io/";
-
-      const url = `starpassprnt://v1/${path}?text=${enc}&encoding=UTF8&copies=1&callback=${encodeURIComponent(callback)}`;
-
-      window.location.href = url;
+      window.location.href = `starpassprnt://v1/print?text=${enc}&encoding=UTF8`;
     }
-
-    document.getElementById('btnDirect').addEventListener('click', () => openPassPRNT({preview:false}));
-    document.getElementById('btnPreview').addEventListener('click', () => openPassPRNT({preview:true}));
   </script>
 </body>
 </html>
