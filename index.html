@@ -6,19 +6,26 @@
   <title>Ticket 58mm – PassPRNT</title>
 
   <!--
-    Uso:
-    https://TU_USUARIO.github.io/TU_REPO/?fecha=2025-08-31%2012:00&factura=ABC123&cliente=Cliente&total=5.00&unidades=2&items=2|Tamarindo%208oz|5.00;1|Galletas|2.50
+    Cómo usar (desde AppSheet o directo por URL):
+    https://TU_USUARIO.github.io/TU_REPO/
+      ?fecha=2025-08-31%2012:00
+      &factura=ABC123
+      &cliente=Cliente
+      &total=5.00
+      &unidades=2
+      &items=2|Tamarindo%208oz|5.00;1|Galletas|2.50
 
     Parámetros:
-      fecha, factura, cliente, total, unidades
-      items: lista separada por ";" y cada item "cantidad|descripcion|total"
-      Ejemplo items: 2|Tamarindo 8oz|5.00;1|Galletas|2.50
+      - fecha, factura, cliente, total, unidades
+      - items: lista separada por ";" y cada item "cantidad|descripcion|total"
+        Ejemplo items: 2|Tamarindo 8oz|5.00;1|Galletas|2.50
   -->
 
   <style>
     :root { --w: 58mm; }
-    body { margin:0; background:#fff; font-family: monospace; }
-    .ticket { width:var(--w); margin:10px auto 70px; font-size:11px; line-height:1.3; color:#000; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#fff; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .ticket { width:var(--w); margin:10px auto 72px; font-size:11px; line-height:1.3; color:#000; }
     .center { text-align:center; }
     hr { border:0; border-top:1px dashed #000; margin:6px 0; }
     .toolbar {
@@ -28,7 +35,7 @@
     }
     button {
       border:1px solid #111; padding:8px 12px; background:#111;
-      color:#fff; border-radius:6px; font-weight:600;
+      color:#fff; border-radius:6px; font-weight:600; cursor:pointer;
     }
     button.secondary { background:#fff; color:#111; }
     @media print {
@@ -78,7 +85,7 @@
       });
     }
 
-    // ===== Construcción del ticket (texto plano, 32 columnas aprox) =====
+    // ===== Construir ticket en texto plano (32 columnas aprox) =====
     function buildPlainTextTicket(){
       const fecha    = qp("fecha")    || new Date().toLocaleString();
       const factura  = qp("factura")  || "0001";
@@ -118,7 +125,7 @@
       return lines.join("\n") + "\n";
     }
 
-    // ===== Rellena la vista HTML =====
+    // ===== Rellenar vista HTML =====
     (function fillPreview(){
       const fecha    = qp("fecha")    || new Date().toLocaleString();
       const factura  = qp("factura")  || "0001";
@@ -137,19 +144,25 @@
         : "1    Item demo            $" + money(total);
     })();
 
-    // ===== Impresión PassPRNT =====
-    function openPassPRNT({preview=false}={}) {
-      // 1) Construye ticket y normaliza CRLF
+    // ===== Impresión PassPRNT (con callback y data:text/plain) =====
+    function openPassPRNT({preview=false}={}){
+      // 1) Ticket con CRLF (algunos firmwares lo requieren)
       let text = buildPlainTextTicket().replace(/\n/g, "\r\n");
 
-      // 2) Codifica
-      const enc = encodeURIComponent(text);
+      // 2) Genera un data URL de texto plano
+      const dataUrl = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
 
-      // 3) Construir URL de impresión (usa message=)
+      // 3) Ruta: con o sin vista previa
       const path = preview ? "print" : "print/nopreview";
-      const url = `starpassprnt://v1/${path}?message=${enc}&encoding=UTF8&copies=1`;
 
-      // 4) Lanzar PassPRNT
+      // 4) Callback (requisito de PassPRNT)
+      //    Usa la misma página como destino de retorno
+      const callback = window.location.origin + window.location.pathname;
+
+      // 5) URL final del esquema
+      const url = `starpassprnt://v1/${path}?url=${encodeURIComponent(dataUrl)}&encoding=UTF8&copies=1&callback=${encodeURIComponent(callback)}`;
+
+      // 6) Lanzar PassPRNT
       window.location.href = url;
     }
 
