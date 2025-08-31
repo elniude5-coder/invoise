@@ -1,37 +1,38 @@
 <!doctype html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Test PassPRNT</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HELLO – PassPRNT test</title>
+<style>
+  body{font-family:ui-monospace,Menlo,Consolas,monospace;padding:24px}
+  button{padding:10px 14px;margin:8px 8px 0 0;border:1px solid #111;border-radius:6px;font-weight:600;cursor:pointer}
+  .p{background:#111;color:#fff}
+</style>
 </head>
 <body>
-  <h3>Prueba directa PassPRNT</h3>
-  <button onclick="print()">Imprimir Ticket</button>
+  <h2>Prueba mínima PassPRNT</h2>
+  <p>Si esto no imprime, el problema está en la configuración de PassPRNT (impresora no seleccionada o modo de impresión).</p>
+  <button class="p" id="btnPrev">HELLO (preview)</button>
+  <button id="btnDirect">HELLO (directo)</button>
 
-  <script>
-    function print() {
-      const text = `
-MD MAGUEY DISTRIBUTOR
-250 ROBINSON AVE #2 - BRONX NY 10465
-Tel: 347-589-2676
-------------------------------
-Fecha: 01-09-2025
-Factura: F0001
-Cliente: Juan Perez
-------------------------------
-QTY DESCRIPCION        TOTAL
-2  CocaCola 12oz       5.00
-1  Galletas            7.50
-------------------------------
-Total Unidades: 3
-TOTAL A PAGAR: 12.50
-------------------------------
-Gracias por su compra!
-      `.trim();
+<script>
+  const BACK = "https://elniude5-coder.github.io/invoise/";   // ← tu URL de retorno
+  const TEXT = encodeURIComponent("HELLO\r\n");                // ← texto mínimo CRLF
 
-      const enc = encodeURIComponent(text);
-      window.location.href = `starpassprnt://v1/print?text=${enc}&encoding=UTF8`;
-    }
-  </script>
+  function openUrl(u){ window.location.href = u; }
+  function hello(preview){
+    const path = preview ? "print" : "print/nopreview";
+    // Intento 1: text=
+    const u1 = `starpassprnt://v1/${path}?text=${TEXT}&encoding=UTF8&back=${encodeURIComponent(BACK)}`;
+    // Intento 2: message= (algunas versiones lo prefieren)
+    const u2 = `starpassprnt://v1/${path}?message=${TEXT}&encoding=UTF8&back=${encodeURIComponent(BACK)}`;
+    // Lanza u1 y si no reacciona, intenta u2
+    openUrl(u1);
+    setTimeout(()=>openUrl(u2), 1200);
+  }
+  document.getElementById('btnPrev').onclick   = ()=>hello(true);
+  document.getElementById('btnDirect').onclick = ()=>hello(false);
+</script>
 </body>
 </html>
