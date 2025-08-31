@@ -2,12 +2,12 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=55mm, initial-scale=1.0" />
-  <title>Ticket 55mm</title>
+  <meta name="viewport" content="width=58mm, initial-scale=1.0" />
+  <title>Ticket 58mm</title>
   <style>
-    /* ====== Estilos para 55mm térmica ====== */
     :root{
-      --w: 55mm;                       /* ancho del rollo */
+      --w: 58mm;                       /* ancho del rollo */
+      --w-print: 48mm;                 /* ancho útil de impresión */
       --font: "Courier New", monospace;
       --fs: 2.6mm;       /* base */
       --fs-head: 3.6mm;  /* título */
@@ -20,50 +20,50 @@
       font-family:var(--font); font-size:var(--fs);
     }
     #ticket{
-      width: var(--w); max-width: var(--w);
-      padding: 2mm 2mm 1.5mm; margin: 0 auto;
+      width: var(--w-print); max-width: var(--w-print);
+      padding: 2mm 1.5mm 1.5mm; margin: 0 auto;
     }
 
     /* Encabezado */
-    .store-header{ text-align:center; margin-bottom: 1.5mm; }
+    .store-header{ text-align:center; margin-bottom: 1mm; }
     .store-title{ font-size: var(--fs-head); font-weight:700; margin: .2mm 0 0 0; letter-spacing:.2mm; }
     .store-details{ font-size: var(--fs-sub); line-height:1.2; margin-top: .5mm; }
 
     /* Tabla */
-    table{ width:100%; border-collapse:collapse; margin-top: 1.2mm; }
+    table{ width:100%; border-collapse:collapse; margin-top: 1mm; }
     thead th{
-      text-align:left; font-weight:700; font-size: var(--fs);
-      border-bottom: 0.3mm solid var(--line);
-      padding-bottom: .5mm;
+      text-align:left; font-weight:700; font-size: var(--fs-sub);
+      border-bottom: 0.2mm solid var(--line);
+      padding-bottom: .4mm;
     }
-    td{ font-size: var(--fs-sub); vertical-align:top; padding-top: .6mm; }
+    td{ font-size: var(--fs-sub); vertical-align:top; padding-top: .5mm; }
 
-    /* Columnas optimizadas a 55mm */
-    .qty-col{ width: 8mm; text-align:right; padding-right: 1mm; }
-    .upc-col{ width: 18mm; }
-    .desc-col{ width: 19mm; }
-    .total-col{ width: 8mm; text-align:right; }
+    /* Columnas (ajustadas a 48mm) */
+    .qty-col{ width: 6mm; text-align:right; padding-right: 0.5mm; }
+    .upc-col{ width: 12mm; }
+    .desc-col{ width: 20mm; }
+    .total-col{ width: 10mm; text-align:right; }
 
     .price-inline{ display:block; font-weight:700; } /* precio debajo del nombre */
-    .row{ border-bottom: 0.3mm dashed #000; }
+    .row{ border-bottom: 0.2mm dashed #000; }
     .row:last-child{ border-bottom:none; }
 
     /* Totales */
-    .totals{ margin-top: 1.2mm; font-size: var(--fs); }
-    .total-line{ display:flex; justify-content: space-between; margin-top: .8mm; }
+    .totals{ margin-top: 1mm; font-size: var(--fs); }
+    .total-line{ display:flex; justify-content: space-between; margin-top: .6mm; }
     .bold{ font-weight:700; }
 
     /* Pie */
-    .footer{ text-align:center; margin-top: 1.4mm; font-size: var(--fs-sub); font-weight:700; }
+    .footer{ text-align:center; margin-top: 1.2mm; font-size: var(--fs-sub); font-weight:700; }
 
-    /* Impresión (tamaño de página) */
+    /* Impresión */
     @media print{
-      html, body{ width: var(--w); }
+      html, body{ width: var(--w-print); }
       #actions{ display:none !important; }
-      @page{ size: var(--w) auto; margin: 0; }
+      @page{ size: var(--w-print) auto; margin: 0; }
     }
 
-    /* Barra de acciones en pantalla */
+    /* Botonera en pantalla */
     #actions{ position:fixed; left:6px; right:6px; bottom:6px; display:flex; gap:6px; z-index:9999; }
     .btn{ flex:1; padding:8px 10px; border:1px solid #000; background:#fff; color:#000; border-radius:8px; font-weight:700; text-align:center; cursor:pointer; }
   </style>
@@ -109,14 +109,13 @@
     </div>
   </div>
 
-  <!-- Botonera (por si quieres lanzar manual) -->
+  <!-- Botonera manual -->
   <div id="actions">
     <button id="btnStar" class="btn">Imprimir Star</button>
     <button id="btnNavegador" class="btn">Imprimir navegador</button>
   </div>
 
   <script>
-    /* --- Utilidades --- */
     const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
     const split = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
     const num = s => {
@@ -138,7 +137,6 @@
     const upcs       = split(q.get("upcs"));
     const p_units    = split(q.get("p_unit"));
 
-    /* --- Header --- */
     const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent = val; };
     set("fecha_text", fecha);
     set("factura_text", pedido || "-");
@@ -146,12 +144,11 @@
     if (direccion){ document.getElementById("dir_wrap").style.display="inline"; set("dir_text", direccion); }
     set("estado_view", estado);
 
-    /* --- Filas --- */
     const tbody = document.getElementById("rows");
     let units = 0, grand = 0;
     const len = Math.max(descs.length, p_units.length, cantidades.length, upcs.length);
     for (let i=0;i<len;i++){
-      const qty  = num(cantidades[i]);
+      const qty  = (cantidades[i] === undefined || cantidades[i] === "" ? 1 : num(cantidades[i]));
       const unit = num(p_units[i]);
       const line = qty * unit;
       units += qty; grand += line;
@@ -169,24 +166,20 @@
     set("units", units);
     set("grand", "$"+fmt(grand));
 
-    /* --- Impresión con Star PassPRNT --- */
     const makePassprntUrl = (docUrl) =>
       `starpassprnt://v1/print/nopreview?url=${encodeURIComponent(docUrl)}&back=${encodeURIComponent("appsheet://")}`;
 
-    // 1) Automático si viene &autoprint=1 (recomendado cuando llames desde AppSheet a esta página)
     if (q.get("autoprint") === "1") {
-      // Imprimir este MISMO HTML
       const currentUrl = location.origin + location.pathname + location.search;
       location.href = makePassprntUrl(currentUrl);
     }
 
-    // 2) Botones por si necesitas lanzar manualmente
     document.getElementById("btnStar").onclick = () => {
       const currentUrl = location.origin + location.pathname + location.search;
       location.href = makePassprntUrl(currentUrl);
     };
     document.getElementById("btnNavegador").onclick = () => {
-      window.print(); // solo si alguna vez necesitas AirPrint/PC
+      window.print();
     };
   </script>
 </body>
