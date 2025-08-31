@@ -5,22 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Ticket 58mm – PassPRNT</title>
 
-  <!--
-    Cómo usar (desde AppSheet o directo por URL):
-    https://TU_USUARIO.github.io/TU_REPO/
-      ?fecha=2025-08-31%2012:00
-      &factura=ABC123
-      &cliente=Cliente
-      &total=5.00
-      &unidades=2
-      &items=2|Tamarindo%208oz|5.00;1|Galletas|2.50
-
-    Parámetros:
-      - fecha, factura, cliente, total, unidades
-      - items: lista separada por ";" y cada item "cantidad|descripcion|total"
-        Ejemplo items: 2|Tamarindo 8oz|5.00;1|Galletas|2.50
-  -->
-
   <style>
     :root { --w: 58mm; }
     * { box-sizing: border-box; }
@@ -76,7 +60,6 @@
     function padR(s,n){ s=String(s); return s.length>=n? s.slice(0,n): s+" ".repeat(n-s.length); }
     function money(x){ const n=Number(String(x).replace(',','.')); return isNaN(n)?"0.00":n.toFixed(2); }
 
-    // items = "2|Tamarindo 8oz|5.00;1|Otro|1.50"
     function parseItemsParam(itemsStr){
       if(!itemsStr) return [];
       return itemsStr.split(";").filter(Boolean).map(row=>{
@@ -85,7 +68,7 @@
       });
     }
 
-    // ===== Construir ticket en texto plano (32 columnas aprox) =====
+    // ===== Ticket en texto plano (32 columnas aprox) =====
     function buildPlainTextTicket(){
       const fecha    = qp("fecha")    || new Date().toLocaleString();
       const factura  = qp("factura")  || "0001";
@@ -125,7 +108,7 @@
       return lines.join("\n") + "\n";
     }
 
-    // ===== Rellenar vista HTML =====
+    // ===== Vista HTML =====
     (function fillPreview(){
       const fecha    = qp("fecha")    || new Date().toLocaleString();
       const factura  = qp("factura")  || "0001";
@@ -144,25 +127,24 @@
         : "1    Item demo            $" + money(total);
     })();
 
-    // ===== Impresión PassPRNT (con callback y data:text/plain) =====
+    // ===== Impresión PassPRNT =====
     function openPassPRNT({preview=false}={}){
-      // 1) Ticket con CRLF (algunos firmwares lo requieren)
+      // 1) Ticket con CRLF
       let text = buildPlainTextTicket().replace(/\n/g, "\r\n");
 
-      // 2) Genera un data URL de texto plano
-      const dataUrl = 'data:text/plain;charset=utf-8,' + encodeURIComponent(text);
+      // 2) Codificar
+      const enc = encodeURIComponent(text);
 
-      // 3) Ruta: con o sin vista previa
+      // 3) Ruta: print o print/nopreview
       const path = preview ? "print" : "print/nopreview";
 
-      // 4) Callback (requisito de PassPRNT)
-      //    Usa la misma página como destino de retorno
+      // 4) Callback obligatorio
       const callback = window.location.origin + window.location.pathname;
 
-      // 5) URL final del esquema
-      const url = `starpassprnt://v1/${path}?url=${encodeURIComponent(dataUrl)}&encoding=UTF8&copies=1&callback=${encodeURIComponent(callback)}`;
+      // 5) URL final usando text=
+      const url = `starpassprnt://v1/${path}?text=${enc}&encoding=UTF8&copies=1&callback=${encodeURIComponent(callback)}`;
 
-      // 6) Lanzar PassPRNT
+      // 6) Abrir PassPRNT
       window.location.href = url;
     }
 
