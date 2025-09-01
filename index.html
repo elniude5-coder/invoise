@@ -1,93 +1,93 @@
 <!-- ====== ENVIAR TICKET A GOOGLE APPS SCRIPT (EPSON ePOS) ====== -->
 <script>
-  // Endpoint de tu Web App (ya implementado)
+  // Endpoint del Web App de GAS
   const PRINT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzkXFF2eZyTUzDWhUW6il1EcbIwPlFWC8Dklj6NF6fiwAd6W1bPcj2GTvHE6Rf4mFk/exec';
-  // Si tu Apps Script valida una clave, ponla aquí. Si no usas clave, déjala vacía ''.
-  const PRINT_SECRET   = 'TU_CLAVE_SECRETA_LARGA';
+  const PRINT_SECRET   = 'TU_CLAVE_SECRETA_LARGA'; // si no validas, déjala ''
 
-  // Añade el botón "Enviar a impresora" al bloque .actions si existe
-  (function ensurePrintButton(){
-    try{
-      const actions = document.querySelector('.actions');
-      if(actions && !actions.querySelector('#btnSendToPrinter')){
-        const btn = document.createElement('button');
-        btn.className = 'btn';
-        btn.id = 'btnSendToPrinter';
-        btn.textContent = 'Enviar a impresora';
-        btn.onclick = sendToPrinter;
-        actions.appendChild(btn);
-      }
-    }catch(_){}
+  // Asegura que exista .actions y el botón
+  (function ensureActionsAndButton(){
+    let actions = document.querySelector('.actions');
+    if (!actions) {
+      actions = document.createElement('div');
+      actions.className = 'actions';
+      actions.style = 'position:fixed;right:4mm;bottom:4mm;font-family:system-ui';
+      document.body.appendChild(actions);
+    }
+    if (!actions.querySelector('#btnSendToPrinter')) {
+      const btn = document.createElement('button');
+      btn.className = 'btn';
+      btn.id = 'btnSendToPrinter';
+      btn.textContent = 'Enviar a impresora';
+      btn.style = 'border:1px solid #000;background:#fff;padding:2mm 4mm;font-size:12px;border-radius:3px;cursor:pointer;margin-left:6px;';
+      btn.onclick = sendToPrinter;
+      actions.appendChild(btn);
+    }
   })();
 
-  // Función principal: toma los datos de la URL y los envía a GAS
+  // Función principal
   async function sendToPrinter(){
     try{
       const qs = new URLSearchParams(location.search);
+      // Diagnóstico si faltan params
+      if (!qs.get('boleta')) {
+        alert('Faltan parámetros en la URL. Abre esta página desde AppSheet.');
+        return;
+      }
 
-      // Helpers
-      const getList = (key, def="") => (qs.get(key)||def).split(",").map(s=>s.trim());
+      const getList  = (k,def="") => (qs.get(k)||def).split(",").map(s=>s.trim());
       const toNumber = v => parseFloat((v||"0").toString().replace(/[^\d.-]/g,"")) || 0;
 
-      // Datos que ya usas en tu página
       const cantidades = getList("cantidades");
       const descs      = getList("servicios");
       const upcs       = getList("upcs");
       const unitP      = getList("p_unit");
 
-      // Armar items en el formato "desc|uds|precio|total"
       const items = [];
-      for(let i=0; i<descs.length; i++){
+      let totalUnidades = 0, subtotal = 0;
+
+      for (let i=0; i<descs.length; i++){
         const uds    = parseInt(cantidades[i]||"0",10) || 0;
         const desc   = decodeURIComponent(descs[i]||"");
         const precio = toNumber(unitP[i]||0);
         const total  = uds * precio;
+        totalUnidades += uds;
+        subtotal += total;
+        // Formato "desc|uds|precio|total" para GAS
         items.push(`${desc}|${uds}|${precio}|${total}`);
       }
 
-      // Totales
-      const totalUnidades = cantidades.reduce((a,b)=> a + (parseInt(b||"0",10) || 0), 0);
-      const subtotal = items.reduce((a,row)=> a + (Number(row.split('|')[3]||0)), 0);
-      const total    = toNumber(qs.get("total")||0);
-
-      // Payload para el Web App de Apps Script
       const payload = {
-        secret: PRINT_SECRET,   // si tu GAS no valida clave, puede ir ''
+        secret: PRINT_SECRET,
         invoice: {
           nFactura: qs.get("boleta") || "",
           fecha:    qs.get("fecha")  || "",
           cliente:  qs.get("mesa") ? decodeURIComponent(qs.get("mesa")) : "",
           direccion:qs.get("direccion") ? decodeURIComponent(qs.get("direccion")) : "",
           empresa:  "A.rodriguezphotos",
-          items,                    // array de "desc|uds|precio|total"
+          items,
           total_unidades: totalUnidades,
           subtotal: subtotal,
-          total: total
+          total: toNumber(qs.get("total")||0)
         }
       };
 
-      // Enviar (si ves bloqueo por CORS, descomenta mode:'no-cors')
       const res = await fetch(PRINT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify(payload)
-        // ,mode: 'no-cors'
+        // ,mode:'no-cors' // si Safari marca CORS, descomenta esta línea
       });
 
-      // Mensaje al usuario
-      if (res.type === 'opaque' /* no-cors */ || res.ok) {
+      if (res.type === 'opaque' || res.ok) {
         alert('Ticket enviado a la impresora.');
       } else {
-        const txt = await res.text().catch(()=> '');
-        alert('No se pudo enviar al Web App.\nRevisa la URL/permiso del Web App.\n\n'+txt);
+        const t = await res.text().catch(()=> '');
+        alert('No se pudo enviar al Web App.\nRevisa permisos/URL en GAS.\n\n'+t);
       }
-    } catch (err){
+    }catch(err){
       console.error(err);
       alert('Error enviando a la impresora: ' + String(err));
     }
   }
-
-  // (Opcional) Enviar automáticamente al cargar la página:
-  // window.addEventListener('load', () => sendToPrinter());
 </script>
 <!-- ====== /ENVIAR TICKET A GOOGLE APPS SCRIPT ====== -->
