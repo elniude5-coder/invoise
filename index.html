@@ -1,150 +1,93 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=58mm, initial-scale=1, maximum-scale=1" />
-<title>Ticket 58mm</title>
-<style>
-  :root{
-    --w:58mm;
-    --font: ui-monospace, Menlo, Consolas, "Courier New", monospace;
-    --fs:2.8mm;
-    --fs-sm:2.3mm;
-    --fs-lg:3.6mm;
-    --ink:#000;
-    --muted:#444;
-  }
-  *{ box-sizing:border-box; color:var(--ink); }
-  html,body{ margin:0; padding:0; width:var(--w); background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .ticket{ width:var(--w); font-family:var(--font); font-size:var(--fs); line-height:1.25; padding:2mm 2mm 1mm; }
-  .center{text-align:center;}
-  .title{font-size:var(--fs-lg); font-weight:700; margin:0 0 0.8mm;}
-  .small{font-size:var(--fs-sm);}
-  .kv{margin-top:0.8mm;}
-  .kv b{display:inline-block; min-width:15mm;}
-  hr{border:0; border-top:0.2mm dashed #000; margin:1.6mm 0;}
-  table{width:100%; border-collapse:collapse;}
-  thead th{font-weight:700; text-align:left; border-bottom:0.2mm solid #000; padding-bottom:0.6mm;}
-  td{vertical-align:top; padding-top:0.8mm;}
-  .qty{width:7mm; text-align:right; padding-right:1mm;}
-  .desc{width:32mm;}
-  .ttl{width:15mm; text-align:right;}
-  .sub{display:block; font-size:var(--fs-sm); color:var(--muted);}
-  .uprice{font-weight:700;}
-  .totals .row{display:flex; justify-content:space-between; margin-top:0.8mm;}
-  .bold{font-weight:700;}
-  .footer{margin-top:2mm; text-align:center; font-weight:700;}
-  .actions{position:fixed; right:4mm; bottom:4mm; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
-  .btn{border:1px solid #000; background:#fff; padding:2mm 4mm; font-size:12px; border-radius:3px; cursor:pointer;}
-  @media print{
-    .actions{display:none;}
-    @page{ size:58mm auto; margin:0; }
-    html,body{ width:58mm; }
-  }
-</style>
-</head>
-<body>
-  <div class="ticket">
-    <div class="center">
-      <div class="title">MD MAGUEY DISTRIBUTOR</div>
-      <div class="small">
-        250 ROBINSON AVE #2 – BRONX NY 10465<br>
-        Tel: 347-589-2676
-      </div>
-    </div>
-
-    <hr>
-
-    <div class="kv"><b>Fecha:</b> <span id="fecha">—</span></div>
-    <div class="kv"><b>Factura:</b> <span id="factura">—</span></div>
-    <div class="kv" id="clienteRow" style="display:none;"><b>Cliente:</b> <span id="cliente">—</span></div>
-    <div class="kv" id="dirRow" style="display:none;"><b>Dirección:</b> <span id="direccion">—</span></div>
-
-    <hr>
-
-    <table>
-      <thead>
-        <tr>
-          <th class="qty">QTY</th>
-          <th class="desc">DESCRIPCIÓN</th>
-          <th class="ttl">TOTAL</th>
-        </tr>
-      </thead>
-      <tbody id="itemsBody"></tbody>
-    </table>
-
-    <hr>
-
-    <div class="totals">
-      <div class="row">
-        <span>Total Unidades</span>
-        <span id="uTotal">0</span>
-      </div>
-      <div class="row bold">
-        <span>TOTAL A PAGAR</span>
-        <span id="total">$0.00</span>
-      </div>
-    </div>
-
-    <div class="footer">¡Gracias por su compra!</div>
-  </div>
-
-  <div class="actions">
-    <button class="btn" onclick="window.print()">Imprimir</button>
-  </div>
-
+<!-- ====== ENVIAR TICKET A GOOGLE APPS SCRIPT (EPSON ePOS) ====== -->
 <script>
-(function(){
-  const qs = new URLSearchParams(location.search);
+  // Endpoint de tu Web App (ya implementado)
+  const PRINT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzkXFF2eZyTUzDWhUW6il1EcbIwPlFWC8Dklj6NF6fiwAd6W1bPcj2GTvHE6Rf4mFk/exec';
+  // Si tu Apps Script valida una clave, ponla aquí. Si no usas clave, déjala vacía ''.
+  const PRINT_SECRET   = 'TU_CLAVE_SECRETA_LARGA';
 
-  const money = v => isNaN(+v) ? "0.00" : (+v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-  const getList = (key, def="") => (qs.get(key)||def).split(",").map(s=>s.trim());
+  // Añade el botón "Enviar a impresora" al bloque .actions si existe
+  (function ensurePrintButton(){
+    try{
+      const actions = document.querySelector('.actions');
+      if(actions && !actions.querySelector('#btnSendToPrinter')){
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.id = 'btnSendToPrinter';
+        btn.textContent = 'Enviar a impresora';
+        btn.onclick = sendToPrinter;
+        actions.appendChild(btn);
+      }
+    }catch(_){}
+  })();
 
-  document.getElementById("factura").textContent = qs.get("boleta") || "";
-  document.getElementById("fecha").textContent   = qs.get("fecha")  || "";
+  // Función principal: toma los datos de la URL y los envía a GAS
+  async function sendToPrinter(){
+    try{
+      const qs = new URLSearchParams(location.search);
 
-  if (qs.get("mesa")){
-    document.getElementById("cliente").textContent = decodeURIComponent(qs.get("mesa"));
-    document.getElementById("clienteRow").style.display = "";
+      // Helpers
+      const getList = (key, def="") => (qs.get(key)||def).split(",").map(s=>s.trim());
+      const toNumber = v => parseFloat((v||"0").toString().replace(/[^\d.-]/g,"")) || 0;
+
+      // Datos que ya usas en tu página
+      const cantidades = getList("cantidades");
+      const descs      = getList("servicios");
+      const upcs       = getList("upcs");
+      const unitP      = getList("p_unit");
+
+      // Armar items en el formato "desc|uds|precio|total"
+      const items = [];
+      for(let i=0; i<descs.length; i++){
+        const uds    = parseInt(cantidades[i]||"0",10) || 0;
+        const desc   = decodeURIComponent(descs[i]||"");
+        const precio = toNumber(unitP[i]||0);
+        const total  = uds * precio;
+        items.push(`${desc}|${uds}|${precio}|${total}`);
+      }
+
+      // Totales
+      const totalUnidades = cantidades.reduce((a,b)=> a + (parseInt(b||"0",10) || 0), 0);
+      const subtotal = items.reduce((a,row)=> a + (Number(row.split('|')[3]||0)), 0);
+      const total    = toNumber(qs.get("total")||0);
+
+      // Payload para el Web App de Apps Script
+      const payload = {
+        secret: PRINT_SECRET,   // si tu GAS no valida clave, puede ir ''
+        invoice: {
+          nFactura: qs.get("boleta") || "",
+          fecha:    qs.get("fecha")  || "",
+          cliente:  qs.get("mesa") ? decodeURIComponent(qs.get("mesa")) : "",
+          direccion:qs.get("direccion") ? decodeURIComponent(qs.get("direccion")) : "",
+          empresa:  "A.rodriguezphotos",
+          items,                    // array de "desc|uds|precio|total"
+          total_unidades: totalUnidades,
+          subtotal: subtotal,
+          total: total
+        }
+      };
+
+      // Enviar (si ves bloqueo por CORS, descomenta mode:'no-cors')
+      const res = await fetch(PRINT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+        // ,mode: 'no-cors'
+      });
+
+      // Mensaje al usuario
+      if (res.type === 'opaque' /* no-cors */ || res.ok) {
+        alert('Ticket enviado a la impresora.');
+      } else {
+        const txt = await res.text().catch(()=> '');
+        alert('No se pudo enviar al Web App.\nRevisa la URL/permiso del Web App.\n\n'+txt);
+      }
+    } catch (err){
+      console.error(err);
+      alert('Error enviando a la impresora: ' + String(err));
+    }
   }
-  if (qs.get("direccion")){
-    document.getElementById("direccion").textContent = decodeURIComponent(qs.get("direccion"));
-    document.getElementById("dirRow").style.display = "";
-  }
 
-  const cantidades = getList("cantidades");
-  const descs      = getList("servicios");
-  const upcs       = getList("upcs");
-  const unitP      = getList("p_unit");
-
-  const body = document.getElementById("itemsBody");
-  let totalUnidades = 0;
-
-  for (let i=0; i<descs.length; i++){
-    const qty   = parseInt(cantidades[i] || "0", 10) || 0;
-    const name  = decodeURIComponent(descs[i] || "");
-    const upc   = (upcs[i] || "").trim();
-    const pu    = parseFloat((unitP[i]||"").toString().replace(/[^\d.-]/g,"")) || 0;
-    const lineTotal = qty * pu;
-
-    totalUnidades += qty;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="qty">${qty}</td>
-      <td class="desc">
-        ${name}
-        <span class="sub uprice">$${money(pu)}</span>
-        <span class="sub">UPC: ${upc || "-"}</span>
-      </td>
-      <td class="ttl">$${money(lineTotal)}</td>
-    `;
-    body.appendChild(tr);
-  }
-
-  document.getElementById("uTotal").textContent = totalUnidades;
-  document.getElementById("total").textContent  = `$${money(qs.get("total")||0)}`;
-})();
+  // (Opcional) Enviar automáticamente al cargar la página:
+  // window.addEventListener('load', () => sendToPrinter());
 </script>
-</body>
-</html>
+<!-- ====== /ENVIAR TICKET A GOOGLE APPS SCRIPT ====== -->
