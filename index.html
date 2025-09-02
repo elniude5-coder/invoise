@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=58mm, initial-scale=1, maximum-scale=1" />
 <title>Ticket 58mm</title>
 <style>
-  :root{ --w:58mm; --font: ui-monospace, Menlo, Consolas, "Courier New", monospace; --fs:2.8mm; --fs-sm:2.3mm; --fs-lg:3.6mm; --ink:#000; --muted:#444; }
+  :root{
+    --w:58mm; --font: ui-monospace, Menlo, Consolas, "Courier New", monospace;
+    --fs:2.8mm; --fs-sm:2.3mm; --fs-lg:3.6mm; --ink:#000; --muted:#444;
+  }
   *{ box-sizing:border-box; color:var(--ink); }
   html,body{ margin:0; padding:0; width:var(--w); background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   .ticket{ width:var(--w); font-family:var(--font); font-size:var(--fs); line-height:1.25; padding:2mm 2mm 1mm; }
@@ -26,7 +29,7 @@
   .totals .row{display:flex; justify-content:space-between; margin-top:0.8mm;}
   .bold{font-weight:700;}
   .footer{margin-top:2mm; text-align:center; font-weight:700;}
-  .actions{position:fixed; right:4mm; bottom:4mm; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
+  .actions{position:fixed; right:4mm; bottom:4mm; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
   .btn{border:1px solid #000; background:#fff; padding:2mm 4mm; font-size:12px; border-radius:3px; cursor:pointer;}
   @media print{ .actions{display:none;} @page{ size:58mm auto; margin:0; } html,body{ width:58mm; } }
 </style>
@@ -71,14 +74,12 @@
 (function(){
   const qs = new URLSearchParams(location.search);
 
-  // Diagnóstico si se abre sin parámetros (evita pantalla en blanco)
+  // Si se abrió sin parámetros (evita pantalla en blanco)
   if (!qs.get("boleta")) {
     document.body.innerHTML = `
       <div style="font:16px/1.4 -apple-system,Segoe UI,Roboto,Arial;padding:16px;">
         <b>Faltan parámetros en la URL.</b><br>
-        Abre esta página desde AppSheet con todos los datos.<br><br>
-        Ejemplo:<br>
-        <code>?boleta=F123&fecha=01/09/2025&cantidades=1,2&servicios=ProdA,ProdB&upcs=111,222&p_unit=10,20&total=40</code>
+        Abre esta página desde AppSheet.
       </div>`;
     return;
   }
@@ -86,29 +87,32 @@
   const money = v => isNaN(+v) ? "0.00" : (+v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   const getList = (key, def="") => (qs.get(key)||def).split(",").map(s=>s.trim());
 
+  // Mostrar encabezado
   document.getElementById("factura").textContent = qs.get("boleta") || "";
   document.getElementById("fecha").textContent   = qs.get("fecha")  || "";
 
   if (qs.get("mesa")){
-    document.getElementById("cliente").textContent = decodeURIComponent(qs.get("mesa"));
+    document.getElementById("cliente").textContent = qs.get("mesa");
     document.getElementById("clienteRow").style.display = "";
   }
   if (qs.get("direccion")){
-    document.getElementById("direccion").textContent = decodeURIComponent(qs.get("direccion"));
+    document.getElementById("direccion").textContent = qs.get("direccion");
     document.getElementById("dirRow").style.display = "";
   }
 
+  // Listas
   const cantidades = getList("cantidades");
   const descs      = getList("servicios");
   const upcs       = getList("upcs");
   const unitP      = getList("p_unit");
 
+  // Cuerpo
   const body = document.getElementById("itemsBody");
   let totalUnidades = 0;
 
   for (let i=0; i<descs.length; i++){
     const qty   = parseInt(cantidades[i] || "0", 10) || 0;
-    const name  = decodeURIComponent(descs[i] || "");
+    const name  = descs[i] || "";
     const upc   = (upcs[i] || "").trim();
     const pu    = parseFloat((unitP[i]||"").toString().replace(/[^\d.-]/g,"")) || 0;
     const lineTotal = qty * pu;
@@ -131,18 +135,19 @@
   document.getElementById("uTotal").textContent = totalUnidades;
   document.getElementById("total").textContent  = `$${money(qs.get("total")||0)}`;
 
-  // ====== ENVIAR TICKET A GOOGLE APPS SCRIPT (EPSON ePOS) ======
-  const PRINT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzkXFF2eZyTUzDWhUW6il1EcbIwPlFWC8Dklj6NF6fiwAd6W1bPcj2GTvHE6Rf4mFk/exec';
-  const PRINT_SECRET   = 'TU_CLAVE_SECRETA_LARGA'; // si no validas, déjala ''
+  // ====== ENVIAR A APPS SCRIPT (EPSON ePOS) ======
+  const PRINT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyY9B99uBLk5ClZ6WVodzLY3bK2oC5mBT0Bg_T3cogMK3oqc8eg_Tck28dyQBM9EYk/exec';
+  const PRINT_SECRET   = '<<<PON_AQUI_TU_SECRET_O_DEJA_VACIO>>>'; // Debe coincidir con SECRET en Apps Script
 
   document.getElementById('btnSendToPrinter').addEventListener('click', sendToPrinter);
 
   async function sendToPrinter(){
     try{
+      // Construir items "desc|uds|precio|total"
       const items = [];
       for(let i=0;i<descs.length;i++){
         const uds    = parseInt(cantidades[i]||"0",10) || 0;
-        const desc   = decodeURIComponent(descs[i]||"");
+        const desc   = descs[i] || "";
         const precio = parseFloat((unitP[i]||"0").toString().replace(/[^\d.-]/g,"")) || 0;
         const total  = uds * precio;
         items.push(`${desc}|${uds}|${precio}|${total}`);
@@ -153,8 +158,8 @@
         invoice: {
           nFactura: qs.get("boleta") || "",
           fecha:    qs.get("fecha")  || "",
-          cliente:  qs.get("mesa") ? decodeURIComponent(qs.get("mesa")) : "",
-          direccion:qs.get("direccion") ? decodeURIComponent(qs.get("direccion")) : "",
+          cliente:  qs.get("mesa") || "",
+          direccion:qs.get("direccion") || "",
           empresa:  "A.rodriguezphotos",
           items,
           total_unidades: totalUnidades,
@@ -163,21 +168,21 @@
         }
       };
 
-      const res = await fetch(PRINT_ENDPOINT, {
+      // iOS/Safari (AppSheet) puede bloquear CORS. Usamos no-cors para garantizar salida del POST.
+      await fetch(PRINT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify(payload)
-        // ,mode:'no-cors' // si Safari marca CORS, descoméntalo
+        body: JSON.stringify(payload),
+        mode: 'no-cors'
       });
 
-      if (res.type === 'opaque' || res.ok) alert('Ticket enviado a la impresora.');
-      else alert('No se pudo enviar al Web App. Revisa permisos/URL.');
+      alert('Ticket enviado. Verifica en Apps Script → Ejecuciones que llegó el trabajo.');
     }catch(err){
       console.error(err);
       alert('Error enviando a la impresora: '+String(err));
     }
   }
-  // ====== /ENVIAR TICKET ======
+  // ====== /ENVIAR ======
 })();
 </script>
 </body>
