@@ -1,58 +1,150 @@
-<!-- ====== ENVIAR TICKET A GOOGLE APPS SCRIPT (EPSON ePOS) ====== -->
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=58mm, initial-scale=1, maximum-scale=1" />
+<title>Ticket 58mm</title>
+<style>
+  :root{ --w:58mm; --font: ui-monospace, Menlo, Consolas, "Courier New", monospace; --fs:2.8mm; --fs-sm:2.3mm; --fs-lg:3.6mm; --ink:#000; --muted:#444; }
+  *{ box-sizing:border-box; color:var(--ink); }
+  html,body{ margin:0; padding:0; width:var(--w); background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .ticket{ width:var(--w); font-family:var(--font); font-size:var(--fs); line-height:1.25; padding:2mm 2mm 1mm; }
+  .center{text-align:center;}
+  .title{font-size:var(--fs-lg); font-weight:700; margin:0 0 0.8mm;}
+  .small{font-size:var(--fs-sm);}
+  .kv{margin-top:0.8mm;}
+  .kv b{display:inline-block; min-width:15mm;}
+  hr{border:0; border-top:0.2mm dashed #000; margin:1.6mm 0;}
+  table{width:100%; border-collapse:collapse;}
+  thead th{font-weight:700; text-align:left; border-bottom:0.2mm solid #000; padding-bottom:0.6mm;}
+  td{vertical-align:top; padding-top:0.8mm;}
+  .qty{width:7mm; text-align:right; padding-right:1mm;}
+  .desc{width:32mm;}
+  .ttl{width:15mm; text-align:right;}
+  .sub{display:block; font-size:var(--fs-sm); color:var(--muted);}
+  .uprice{font-weight:700;}
+  .totals .row{display:flex; justify-content:space-between; margin-top:0.8mm;}
+  .bold{font-weight:700;}
+  .footer{margin-top:2mm; text-align:center; font-weight:700;}
+  .actions{position:fixed; right:4mm; bottom:4mm; font-family:system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
+  .btn{border:1px solid #000; background:#fff; padding:2mm 4mm; font-size:12px; border-radius:3px; cursor:pointer;}
+  @media print{ .actions{display:none;} @page{ size:58mm auto; margin:0; } html,body{ width:58mm; } }
+</style>
+</head>
+<body>
+  <div class="ticket">
+    <div class="center">
+      <div class="title">MD MAGUEY DISTRIBUTOR</div>
+      <div class="small">250 ROBINSON AVE #2 – BRONX NY 10465<br>Tel: 347-589-2676</div>
+    </div>
+
+    <hr>
+
+    <div class="kv"><b>Fecha:</b> <span id="fecha">—</span></div>
+    <div class="kv"><b>Factura:</b> <span id="factura">—</span></div>
+    <div class="kv" id="clienteRow" style="display:none;"><b>Cliente:</b> <span id="cliente">—</span></div>
+    <div class="kv" id="dirRow" style="display:none;"><b>Dirección:</b> <span id="direccion">—</span></div>
+
+    <hr>
+
+    <table>
+      <thead><tr><th class="qty">QTY</th><th class="desc">DESCRIPCIÓN</th><th class="ttl">TOTAL</th></tr></thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+
+    <hr>
+
+    <div class="totals">
+      <div class="row"><span>Total Unidades</span><span id="uTotal">0</span></div>
+      <div class="row bold"><span>TOTAL A PAGAR</span><span id="total">$0.00</span></div>
+    </div>
+
+    <div class="footer">¡Gracias por su compra!</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" onclick="window.print()">Imprimir</button>
+    <button class="btn" id="btnSendToPrinter">Enviar a impresora</button>
+  </div>
+
 <script>
-  // Endpoint del Web App de GAS
+(function(){
+  const qs = new URLSearchParams(location.search);
+
+  // Diagnóstico si se abre sin parámetros (evita pantalla en blanco)
+  if (!qs.get("boleta")) {
+    document.body.innerHTML = `
+      <div style="font:16px/1.4 -apple-system,Segoe UI,Roboto,Arial;padding:16px;">
+        <b>Faltan parámetros en la URL.</b><br>
+        Abre esta página desde AppSheet con todos los datos.<br><br>
+        Ejemplo:<br>
+        <code>?boleta=F123&fecha=01/09/2025&cantidades=1,2&servicios=ProdA,ProdB&upcs=111,222&p_unit=10,20&total=40</code>
+      </div>`;
+    return;
+  }
+
+  const money = v => isNaN(+v) ? "0.00" : (+v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const getList = (key, def="") => (qs.get(key)||def).split(",").map(s=>s.trim());
+
+  document.getElementById("factura").textContent = qs.get("boleta") || "";
+  document.getElementById("fecha").textContent   = qs.get("fecha")  || "";
+
+  if (qs.get("mesa")){
+    document.getElementById("cliente").textContent = decodeURIComponent(qs.get("mesa"));
+    document.getElementById("clienteRow").style.display = "";
+  }
+  if (qs.get("direccion")){
+    document.getElementById("direccion").textContent = decodeURIComponent(qs.get("direccion"));
+    document.getElementById("dirRow").style.display = "";
+  }
+
+  const cantidades = getList("cantidades");
+  const descs      = getList("servicios");
+  const upcs       = getList("upcs");
+  const unitP      = getList("p_unit");
+
+  const body = document.getElementById("itemsBody");
+  let totalUnidades = 0;
+
+  for (let i=0; i<descs.length; i++){
+    const qty   = parseInt(cantidades[i] || "0", 10) || 0;
+    const name  = decodeURIComponent(descs[i] || "");
+    const upc   = (upcs[i] || "").trim();
+    const pu    = parseFloat((unitP[i]||"").toString().replace(/[^\d.-]/g,"")) || 0;
+    const lineTotal = qty * pu;
+
+    totalUnidades += qty;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="qty">${qty}</td>
+      <td class="desc">
+        ${name}
+        <span class="sub uprice">$${money(pu)}</span>
+        <span class="sub">UPC: ${upc || "-"}</span>
+      </td>
+      <td class="ttl">$${money(lineTotal)}</td>
+    `;
+    body.appendChild(tr);
+  }
+
+  document.getElementById("uTotal").textContent = totalUnidades;
+  document.getElementById("total").textContent  = `$${money(qs.get("total")||0)}`;
+
+  // ====== ENVIAR TICKET A GOOGLE APPS SCRIPT (EPSON ePOS) ======
   const PRINT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzkXFF2eZyTUzDWhUW6il1EcbIwPlFWC8Dklj6NF6fiwAd6W1bPcj2GTvHE6Rf4mFk/exec';
   const PRINT_SECRET   = 'TU_CLAVE_SECRETA_LARGA'; // si no validas, déjala ''
 
-  // Asegura que exista .actions y el botón
-  (function ensureActionsAndButton(){
-    let actions = document.querySelector('.actions');
-    if (!actions) {
-      actions = document.createElement('div');
-      actions.className = 'actions';
-      actions.style = 'position:fixed;right:4mm;bottom:4mm;font-family:system-ui';
-      document.body.appendChild(actions);
-    }
-    if (!actions.querySelector('#btnSendToPrinter')) {
-      const btn = document.createElement('button');
-      btn.className = 'btn';
-      btn.id = 'btnSendToPrinter';
-      btn.textContent = 'Enviar a impresora';
-      btn.style = 'border:1px solid #000;background:#fff;padding:2mm 4mm;font-size:12px;border-radius:3px;cursor:pointer;margin-left:6px;';
-      btn.onclick = sendToPrinter;
-      actions.appendChild(btn);
-    }
-  })();
+  document.getElementById('btnSendToPrinter').addEventListener('click', sendToPrinter);
 
-  // Función principal
   async function sendToPrinter(){
     try{
-      const qs = new URLSearchParams(location.search);
-      // Diagnóstico si faltan params
-      if (!qs.get('boleta')) {
-        alert('Faltan parámetros en la URL. Abre esta página desde AppSheet.');
-        return;
-      }
-
-      const getList  = (k,def="") => (qs.get(k)||def).split(",").map(s=>s.trim());
-      const toNumber = v => parseFloat((v||"0").toString().replace(/[^\d.-]/g,"")) || 0;
-
-      const cantidades = getList("cantidades");
-      const descs      = getList("servicios");
-      const upcs       = getList("upcs");
-      const unitP      = getList("p_unit");
-
       const items = [];
-      let totalUnidades = 0, subtotal = 0;
-
-      for (let i=0; i<descs.length; i++){
+      for(let i=0;i<descs.length;i++){
         const uds    = parseInt(cantidades[i]||"0",10) || 0;
         const desc   = decodeURIComponent(descs[i]||"");
-        const precio = toNumber(unitP[i]||0);
+        const precio = parseFloat((unitP[i]||"0").toString().replace(/[^\d.-]/g,"")) || 0;
         const total  = uds * precio;
-        totalUnidades += uds;
-        subtotal += total;
-        // Formato "desc|uds|precio|total" para GAS
         items.push(`${desc}|${uds}|${precio}|${total}`);
       }
 
@@ -66,8 +158,8 @@
           empresa:  "A.rodriguezphotos",
           items,
           total_unidades: totalUnidades,
-          subtotal: subtotal,
-          total: toNumber(qs.get("total")||0)
+          subtotal: items.reduce((a,row)=> a + (Number(row.split('|')[3]||0)), 0),
+          total: parseFloat((qs.get("total")||"0").toString().replace(/[^\d.-]/g,"")) || 0
         }
       };
 
@@ -75,19 +167,18 @@
         method: 'POST',
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify(payload)
-        // ,mode:'no-cors' // si Safari marca CORS, descomenta esta línea
+        // ,mode:'no-cors' // si Safari marca CORS, descoméntalo
       });
 
-      if (res.type === 'opaque' || res.ok) {
-        alert('Ticket enviado a la impresora.');
-      } else {
-        const t = await res.text().catch(()=> '');
-        alert('No se pudo enviar al Web App.\nRevisa permisos/URL en GAS.\n\n'+t);
-      }
+      if (res.type === 'opaque' || res.ok) alert('Ticket enviado a la impresora.');
+      else alert('No se pudo enviar al Web App. Revisa permisos/URL.');
     }catch(err){
       console.error(err);
-      alert('Error enviando a la impresora: ' + String(err));
+      alert('Error enviando a la impresora: '+String(err));
     }
   }
+  // ====== /ENVIAR TICKET ======
+})();
 </script>
-<!-- ====== /ENVIAR TICKET A GOOGLE APPS SCRIPT ====== -->
+</body>
+</html>
