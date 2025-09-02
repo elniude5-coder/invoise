@@ -29,7 +29,7 @@
   .totals .row{display:flex; justify-content:space-between; margin-top:0.8mm;}
   .bold{font-weight:700;}
   .footer{margin-top:2mm; text-align:center; font-weight:700;}
-  .actions{position:fixed; right:4mm; bottom:4mm; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
+  .actions{position:fixed; right:4mm; bottom:4mm; display:flex; gap:6px; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
   .btn{border:1px solid #000; background:#fff; padding:2mm 4mm; font-size:12px; border-radius:3px; cursor:pointer;}
   @media print{ .actions{display:none;} @page{ size:58mm auto; margin:0; } html,body{ width:58mm; } }
 </style>
@@ -66,15 +66,15 @@
   </div>
 
   <div class="actions">
-    <button class="btn" onclick="window.print()">Imprimir</button>
-    <button class="btn" id="btnSendToPrinter">Enviar a impresora</button>
+    <button class="btn" onclick="window.print()">Vista previa</button>
+    <button class="btn" id="btnStar">Imprimir con Star (Bluetooth)</button>
   </div>
 
 <script>
 (function(){
   const qs = new URLSearchParams(location.search);
 
-  // Si se abrió sin parámetros (evita pantalla en blanco)
+  // Si se abre sin parámetros, muestra ayuda y corta
   if (!qs.get("boleta")) {
     document.body.innerHTML = `
       <div style="font:16px/1.4 -apple-system,Segoe UI,Roboto,Arial;padding:16px;">
@@ -87,7 +87,7 @@
   const money = v => isNaN(+v) ? "0.00" : (+v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
   const getList = (key, def="") => (qs.get(key)||def).split(",").map(s=>s.trim());
 
-  // Mostrar encabezado
+  // Encabezado
   document.getElementById("factura").textContent = qs.get("boleta") || "";
   document.getElementById("fecha").textContent   = qs.get("fecha")  || "";
 
@@ -100,19 +100,18 @@
     document.getElementById("dirRow").style.display = "";
   }
 
-  // Listas
+  // Cuerpo
   const cantidades = getList("cantidades");
   const descs      = getList("servicios");
   const upcs       = getList("upcs");
   const unitP      = getList("p_unit");
 
-  // Cuerpo
   const body = document.getElementById("itemsBody");
   let totalUnidades = 0;
 
   for (let i=0; i<descs.length; i++){
     const qty   = parseInt(cantidades[i] || "0", 10) || 0;
-    const name  = descs[i] || "";
+    const name  = (descs[i] || "");
     const upc   = (upcs[i] || "").trim();
     const pu    = parseFloat((unitP[i]||"").toString().replace(/[^\d.-]/g,"")) || 0;
     const lineTotal = qty * pu;
@@ -135,54 +134,57 @@
   document.getElementById("uTotal").textContent = totalUnidades;
   document.getElementById("total").textContent  = `$${money(qs.get("total")||0)}`;
 
-  // ====== ENVIAR A APPS SCRIPT (EPSON ePOS) ======
-  const PRINT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyY9B99uBLk5ClZ6WVodzLY3bK2oC5mBT0Bg_T3cogMK3oqc8eg_Tck28dyQBM9EYk/exec';
-  const PRINT_SECRET   = '<<<PON_AQUI_TU_SECRET_O_DEJA_VACIO>>>'; // Debe coincidir con SECRET en Apps Script
-
-  document.getElementById('btnSendToPrinter').addEventListener('click', sendToPrinter);
-
-  async function sendToPrinter(){
+  // ====== IMPRESIÓN CON STAR PassPRNT (SM-S230i) ======
+  const btnStar = document.getElementById('btnStar');
+  btnStar.addEventListener('click', ()=>{
     try{
-      // Construir items "desc|uds|precio|total"
-      const items = [];
-      for(let i=0;i<descs.length;i++){
-        const uds    = parseInt(cantidades[i]||"0",10) || 0;
-        const desc   = descs[i] || "";
-        const precio = parseFloat((unitP[i]||"0").toString().replace(/[^\d.-]/g,"")) || 0;
-        const total  = uds * precio;
-        items.push(`${desc}|${uds}|${precio}|${total}`);
+      // 1) Generar el texto plano del ticket (compatible con PassPRNT)
+      let lines = [];
+      lines.push('MD MAGUEY DISTRIBUTOR');
+      lines.push('250 ROBINSON AVE #2 – BRONX NY 10465');
+      lines.push('Tel: 347-589-2676');
+      lines.push('--------------------------------');
+      lines.push(`Fecha: ${qs.get('fecha')||''}`);
+      lines.push(`Factura: ${qs.get('boleta')||''}`);
+      if (qs.get('mesa'))      lines.push(`Cliente: ${qs.get('mesa')}`);
+      if (qs.get('direccion')) lines.push(`Direccion: ${qs.get('direccion')}`);
+      lines.push('--------------------------------');
+      lines.push('QTY  DESCRIPCION                 TOTAL');
+
+      for (let i=0; i<descs.length; i++){
+        const qty   = parseInt(cantidades[i] || "0", 10) || 0;
+        const name  = (descs[i] || "");
+        const pu    = parseFloat((unitP[i]||"").toString().replace(/[^\d.-]/g,"")) || 0;
+        const tot   = qty * pu;
+        const left  = (qty + ' ' + name).slice(0,30).padEnd(30,' ');
+        const right = ('$' + money(tot)).padStart(8,' ');
+        lines.push(left + right);
+        lines.push('  $' + money(pu));
       }
 
-      const payload = {
-        secret: PRINT_SECRET,
-        invoice: {
-          nFactura: qs.get("boleta") || "",
-          fecha:    qs.get("fecha")  || "",
-          cliente:  qs.get("mesa") || "",
-          direccion:qs.get("direccion") || "",
-          empresa:  "A.rodriguezphotos",
-          items,
-          total_unidades: totalUnidades,
-          subtotal: items.reduce((a,row)=> a + (Number(row.split('|')[3]||0)), 0),
-          total: parseFloat((qs.get("total")||"0").toString().replace(/[^\d.-]/g,"")) || 0
-        }
-      };
+      lines.push('--------------------------------');
+      lines.push(`Total Unidades: ${totalUnidades}`);
+      lines.push(`TOTAL A PAGAR: $${money(qs.get('total')||0)}`);
+      lines.push('\n\n'); // feed
 
-      // iOS/Safari (AppSheet) puede bloquear CORS. Usamos no-cors para garantizar salida del POST.
-      await fetch(PRINT_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify(payload),
-        mode: 'no-cors'
-      });
+      const texto = lines.join('\n');
 
-      alert('Ticket enviado. Verifica en Apps Script → Ejecuciones que llegó el trabajo.');
+      // 2) Codificar para URL
+      const data = encodeURIComponent(texto);
+
+      // 3) Llamar a PassPRNT (Star)
+      // Variantes (si una no imprime, prueba otra):
+      // const url = `starpassprnt://v1/print?data=${data}`;                 // con vista previa
+      // const url = `starpassprnt://v1/print/nopreview?data=${data}`;       // sin vista previa
+      const url = `starpassprnt://v1/print?type=standard&data=${data}`;     // indicando tipo texto
+
+      // 4) Redirigir a la app
+      window.location.href = url;
+
     }catch(err){
-      console.error(err);
-      alert('Error enviando a la impresora: '+String(err));
+      alert('No se pudo abrir PassPRNT: ' + String(err));
     }
-  }
-  // ====== /ENVIAR ======
+  });
 })();
 </script>
 </body>
