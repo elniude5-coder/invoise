@@ -66,125 +66,146 @@
   </div>
 
   <div class="actions">
-    <button class="btn" onclick="window.print()">Vista previa</button>
-    <button class="btn" id="btnStar">Imprimir con Star (Bluetooth)</button>
+    <button class="btn" id="btnPreview">Vista previa</button>
+    <button class="btn" id="btnEpson">Enviar a Epson (Bluetooth)</button>
   </div>
 
 <script>
 (function(){
   const qs = new URLSearchParams(location.search);
 
-  // Si se abre sin parámetros, muestra ayuda y corta
-  if (!qs.get("boleta")) {
-    document.body.innerHTML = `
-      <div style="font:16px/1.4 -apple-system,Segoe UI,Roboto,Arial;padding:16px;">
-        <b>Faltan parámetros en la URL.</b><br>
-        Abre esta página desde AppSheet.
-      </div>`;
-    return;
-  }
-
+  // Utilidades
   const money = v => isNaN(+v) ? "0.00" : (+v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-  const getList = (key, def="") => (qs.get(key)||def).split(",").map(s=>s.trim());
+  const splitList = (key) => (qs.get(key)||"").split(/[;,]/).map(s=>s.trim()).filter(Boolean);
+  const getNum = (s) => {
+    if (s == null) return 0;
+    const n = parseFloat(String(s).replace(/[^\d.-]/g,""));
+    return isNaN(n) ? 0 : n;
+  };
 
   // Encabezado
-  document.getElementById("factura").textContent = qs.get("boleta") || "";
-  document.getElementById("fecha").textContent   = qs.get("fecha")  || "";
+  const fecha   = qs.get("fecha")  || "";
+  const boleta  = qs.get("boleta") || "";
+  const cliente = qs.get("mesa")   || "";
+  const dir     = qs.get("direccion") || "";
 
-  if (qs.get("mesa")){
-    document.getElementById("cliente").textContent = qs.get("mesa");
-    document.getElementById("clienteRow").style.display = "";
-  }
-  if (qs.get("direccion")){
-    document.getElementById("direccion").textContent = qs.get("direccion");
-    document.getElementById("dirRow").style.display = "";
-  }
+  document.getElementById("fecha").textContent   = fecha;
+  document.getElementById("factura").textContent = boleta;
+  if (cliente){ document.getElementById("clienteRow").style.display=""; document.getElementById("cliente").textContent=cliente; }
+  if (dir){ document.getElementById("dirRow").style.display=""; document.getElementById("direccion").textContent=dir; }
 
-  // Cuerpo
-  const cantidades = getList("cantidades");
-  const descs      = getList("servicios");
-  const upcs       = getList("upcs");
-  const unitP      = getList("p_unit");
+  // Listas de ítems
+  const cantidades = splitList("cantidades");
+  const descs      = splitList("servicios");
+  const upcs       = splitList("upcs");
+  const p_units    = splitList("p_unit");
 
   const body = document.getElementById("itemsBody");
   let totalUnidades = 0;
+  let total = 0;
 
-  for (let i=0; i<descs.length; i++){
-    const qty   = parseInt(cantidades[i] || "0", 10) || 0;
-    const name  = (descs[i] || "");
-    const upc   = (upcs[i] || "").trim();
-    const pu    = parseFloat((unitP[i]||"").toString().replace(/[^\d.-]/g,"")) || 0;
-    const lineTotal = qty * pu;
+  const len = Math.max(descs.length, p_units.length, cantidades.length, upcs.length);
+  for (let i=0;i<len;i++){
+    const qty  = cantidades[i] ? getNum(cantidades[i]) : 1;      // si vacío, asume 1
+    const name = descs[i] || "";
+    const upc  = upcs[i] || "";
+    const pu   = getNum(p_units[i]);
+    const line = qty * pu;
 
     totalUnidades += qty;
+    total += line;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td class="qty">${qty}</td>
+      <td class="qty">${qty || ""}</td>
       <td class="desc">
         ${name}
         <span class="sub uprice">$${money(pu)}</span>
-        <span class="sub">UPC: ${upc || "-"}</span>
+        ${upc ? `<span class="sub">UPC: ${upc}</span>` : ""}
       </td>
-      <td class="ttl">$${money(lineTotal)}</td>
+      <td class="ttl">$${money(line)}</td>
     `;
     body.appendChild(tr);
   }
 
+  // Si viene un total calculado desde AppSheet, respétalo; si no, usa el local
+  const totalParam = getNum(qs.get("total"));
+  const totalShow = totalParam > 0 ? totalParam : total;
   document.getElementById("uTotal").textContent = totalUnidades;
-  document.getElementById("total").textContent  = `$${money(qs.get("total")||0)}`;
+  document.getElementById("total").textContent  = `$${money(totalShow)}`;
 
-  // ====== IMPRESIÓN CON STAR PassPRNT (SM-S230i) ======
-  const btnStar = document.getElementById('btnStar');
-  btnStar.addEventListener('click', ()=>{
+  // ====== Construcción de TEXTO plano para Epson (58mm ~ 32 cols) ======
+  function buildPlainText(){
+    const width = 32;
+    const pad = (s,w,side='right')=>{
+      s = (s??'').toString();
+      if (s.length >= w) return s.slice(0,w);
+      const sp = ' '.repeat(w - s.length);
+      return side==='left' ? sp + s : s + sp;
+    };
+
+    let lines = [];
+    lines.push("MD MAGUEY DISTRIBUTOR");
+    lines.push("250 ROBINSON AVE #2 – BRONX NY 10465");
+    lines.push("Tel: 347-589-2676");
+    lines.push("-".repeat(width));
+    if (fecha)  lines.push(`Fecha: ${fecha}`);
+    if (boleta) lines.push(`Factura: ${boleta}`);
+    if (cliente)lines.push(`Cliente: ${cliente}`);
+    if (dir)    lines.push(`Direccion: ${dir}`);
+    lines.push("-".repeat(width));
+    lines.push("QTY DESCRIPCION               TOTAL");
+
+    for (let i=0;i<len;i++){
+      const qty  = cantidades[i] ? getNum(cantidades[i]) : 1;
+      const name = (descs[i] || "");
+      const pu   = getNum(p_units[i]);
+      const tot  = qty * pu;
+
+      const left  = (String(qty) + " " + name).slice(0,24).padEnd(24,' ');
+      const right = ("$"+money(tot)).padStart(8,' ');
+      lines.push(left + right);
+      lines.push(("  $" + money(pu)).slice(0,width));
+    }
+
+    lines.push("-".repeat(width));
+    lines.push(("Total Unidades: " + totalUnidades).slice(0,width));
+    lines.push(("TOTAL A PAGAR: $" + money(totalShow)).slice(0,width));
+    lines.push("\n\n");
+    return lines.join("\n");
+  }
+
+  // ====== Botones ======
+  document.getElementById("btnPreview").onclick = () => window.print();
+
+  const btnEpson = document.getElementById('btnEpson');
+  btnEpson.addEventListener('click', async () => {
     try{
-      // 1) Generar el texto plano del ticket (compatible con PassPRNT)
-      let lines = [];
-      lines.push('MD MAGUEY DISTRIBUTOR');
-      lines.push('250 ROBINSON AVE #2 – BRONX NY 10465');
-      lines.push('Tel: 347-589-2676');
-      lines.push('--------------------------------');
-      lines.push(`Fecha: ${qs.get('fecha')||''}`);
-      lines.push(`Factura: ${qs.get('boleta')||''}`);
-      if (qs.get('mesa'))      lines.push(`Cliente: ${qs.get('mesa')}`);
-      if (qs.get('direccion')) lines.push(`Direccion: ${qs.get('direccion')}`);
-      lines.push('--------------------------------');
-      lines.push('QTY  DESCRIPCION                 TOTAL');
+      const texto = buildPlainText();
+      const blob = new Blob([texto], { type: 'text/plain' });
+      const file = new File([blob], 'ticket.txt', { type: 'text/plain' });
 
-      for (let i=0; i<descs.length; i++){
-        const qty   = parseInt(cantidades[i] || "0", 10) || 0;
-        const name  = (descs[i] || "");
-        const pu    = parseFloat((unitP[i]||"").toString().replace(/[^\d.-]/g,"")) || 0;
-        const tot   = qty * pu;
-        const left  = (qty + ' ' + name).slice(0,30).padEnd(30,' ');
-        const right = ('$' + money(tot)).padStart(8,' ');
-        lines.push(left + right);
-        lines.push('  $' + money(pu));
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files:[file], title:'Ticket', text:'Ticket de venta' });
+        // Elige "Epson TM Print Assistant" en la hoja de compartir.
+      } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(file);
+        a.download = 'ticket.txt';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        alert('Se descargó ticket.txt. Ábrelo y usa "Compartir" → Epson TM Print Assistant para imprimir.');
       }
-
-      lines.push('--------------------------------');
-      lines.push(`Total Unidades: ${totalUnidades}`);
-      lines.push(`TOTAL A PAGAR: $${money(qs.get('total')||0)}`);
-      lines.push('\n\n'); // feed
-
-      const texto = lines.join('\n');
-
-      // 2) Codificar para URL
-      const data = encodeURIComponent(texto);
-
-      // 3) Llamar a PassPRNT (Star)
-      // Variantes (si una no imprime, prueba otra):
-      // const url = `starpassprnt://v1/print?data=${data}`;                 // con vista previa
-      // const url = `starpassprnt://v1/print/nopreview?data=${data}`;       // sin vista previa
-      const url = `starpassprnt://v1/print?type=standard&data=${data}`;     // indicando tipo texto
-
-      // 4) Redirigir a la app
-      window.location.href = url;
-
     }catch(err){
-      alert('No se pudo abrir PassPRNT: ' + String(err));
+      alert('No se pudo abrir la hoja de compartir: ' + String(err));
     }
   });
+
+  // Auto-compartir si agregas &autoshare=1 en la URL
+  if (qs.get("autoshare") === "1") {
+    setTimeout(() => btnEpson.click(), 350);
+  }
 })();
 </script>
 </body>
