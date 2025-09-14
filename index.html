@@ -1,177 +1,266 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=58mm, initial-scale=1, maximum-scale=1" />
-<title>Ticket 58mm</title>
-<style>
-  :root{
-    --w:58mm; --font: ui-monospace, Menlo, Consolas, "Courier New", monospace;
-    --fs:2.8mm; --fs-sm:2.3mm; --fs-lg:3.6mm; --ink:#000; --muted:#444;
-  }
-  *{ box-sizing:border-box; color:var(--ink); }
-  html,body{ margin:0; padding:0; width:var(--w); background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .ticket{ width:var(--w); font-family:var(--font); font-size:var(--fs); line-height:1.25; padding:2mm 2mm 1mm; }
-  .center{text-align:center;}
-  .title{font-size:var(--fs-lg); font-weight:700; margin:0 0 0.8mm;}
-  .small{font-size:var(--fs-sm);}
-  .kv{margin-top:0.8mm;}
-  .kv b{display:inline-block; min-width:15mm;}
-  hr{border:0; border-top:0.2mm dashed #000; margin:1.6mm 0;}
-  table{width:100%; border-collapse:collapse;}
-  thead th{font-weight:700; text-align:left; border-bottom:0.2mm solid #000; padding-bottom:0.6mm;}
-  td{vertical-align:top; padding-top:0.8mm;}
-  .qty{width:7mm; text-align:right; padding-right:1mm;}
-  .desc{width:32mm;}
-  .ttl{width:15mm; text-align:right;}
-  .sub{display:block; font-size:var(--fs-sm); color:var(--muted);}
-  .uprice{font-weight:700;}
-  .totals .row{display:flex; justify-content:space-between; margin-top:0.8mm;}
-  .bold{font-weight:700;}
-  .footer{margin-top:2mm; text-align:center; font-weight:700;}
-  .notice{margin:2mm; font: 12px/1.35 -apple-system,Segoe UI,Roboto,sans-serif; color:#333;}
-  .actions{position:sticky; bottom:0; left:0; width:100%; padding:8px; display:flex; gap:8px; background:#fff;}
-  .btn{flex:1; border:1px solid #000; background:#fff; padding:10px 12px; font-size:14px; border-radius:6px; cursor:pointer;}
-  .btn.secondary{border-style:dashed}
-  @media print{ .actions,.notice{display:none;} @page{ size:58mm auto; margin:0; } html,body{ width:58mm; } }
-</style>
-</head>
-<body>
-  <div id="ticket" class="ticket" aria-label="ticket">
-    <div class="center">
-      <div class="title">MD MAGUEY DISTRIBUTOR</div>
-      <div class="small">250 ROBINSON AVE #2 – BRONX NY 10465<br>Tel: 347-589-2676</div>
-    </div>
-
-    <hr>
-
-    <div class="kv"><b>Fecha:</b> <span id="fecha">—</span></div>
-    <div class="kv"><b>Factura:</b> <span id="factura">—</span></div>
-    <div class="kv" id="clienteRow" style="display:none;"><b>Cliente:</b> <span id="cliente">—</span></div>
-    <div class="kv" id="dirRow" style="display:none;"><b>Dirección:</b> <span id="direccion">—</span></div>
-
-    <hr>
-
-    <table>
-      <thead><tr><th class="qty">QTY</th><th class="desc">DESCRIPCIÓN</th><th class="ttl">TOTAL</th></tr></thead>
-      <tbody id="itemsBody"></tbody>
-    </table>
-
-    <hr>
-
-    <div class="totals">
-      <div class="row"><span>Total Unidades</span><span id="uTotal">0</span></div>
-      <div class="row bold"><span>TOTAL A PAGAR</span><span id="total">$0.00</span></div>
-    </div>
-
-    <div class="footer">¡Gracias por su compra!</div>
-  </div>
-
-  <div class="notice" id="hint" hidden>
-    Si no se abre la hoja de compartir, toca <b>Abrir imagen</b>, luego usa el ícono <b>Compartir</b> de iOS y elige <b>Epson TM Print Assistant</b>.
-  </div>
-
-  <div class="actions">
-    <button class="btn secondary" onclick="window.print()">Vista previa</button>
-    <button class="btn" id="btnShare">Compartir / Imprimir (iPhone)</button>
-    <a id="openImg" class="btn secondary" href="#" download="ticket.png" hidden>Abrir imagen</a>
-  </div>
-
-  <!-- html2canvas (CDN) para capturar el ticket como imagen -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha256-hRj8t7gO7o1a5i3Kxj0z5fX1Wn0v+Axm7gncHk4m0Ck=" crossorigin="anonymous"></script>
-
 <script>
-(function(){
-  const qs = new URLSearchParams(location.search);
-  const money = v => isNaN(+v) ? "0.00" : (+v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
-  const getList = (key, def="") => (qs.get(key)||def).split(",").map(s=>s.trim()).filter(x=>x!== "");
+  /* --- Utilidades --- */
+  const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+  const split = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
+  // Convierte " $2.00 ", "RD$ 1,234.50", " 36.00 " -> 2, 1234.5, 36
+  const num = s => {
+    if (s == null) return 0;
+    const cleaned = String(s)
+      .replace(/\u00A0/g, " ")      // NBSP -> space
+      .replace(/\s+/g, "")          // quita espacios
+      .replace(/[^0-9.\-]/g, "");   // deja solo dígitos, punto y signo
+    const n = parseFloat(cleaned);
+    return isNaN(n) ? 0 : n;
+  };
 
-  // Encabezado
-  document.getElementById("factura").textContent = qs.get("boleta") || "";
-  document.getElementById("fecha").textContent   = qs.get("fecha")  || "";
-  if (qs.get("mesa")){
-    document.getElementById("cliente").textContent = qs.get("mesa");
-    document.getElementById("clienteRow").style.display = "";
-  }
-  if (qs.get("direccion")){
-    document.getElementById("direccion").textContent = qs.get("direccion");
-    document.getElementById("dirRow").style.display = "";
-  }
+  /* --- Leer parámetros --- */
+  const q = new URLSearchParams(location.search);
+  const pedido = q.get("boleta") || "";
+  const cliente = q.get("mesa") || "";
+  const direccion = q.get("direccion") || "";
+  const fecha = q.get("fecha") || "";
+  const estado = q.get("estado") || "";
 
-  // Cuerpo
-  const cantidades = getList("cantidades");
-  const descs      = getList("servicios");
-  const upcs       = getList("upcs");
-  const unitP      = getList("p_unit");
+  const cantidades    = split(q.get("cantidades"));
+  const descripciones = split(q.get("servicios"));
+  const upcs          = split(q.get("upcs"));
+  const p_units       = split(q.get("p_unit"));   // puede venir como $2.00, RD$2.00, etc.
 
-  const body = document.getElementById("itemsBody");
-  let totalUnidades = 0;
+  /* --- Header --- */
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setText("fecha_display", fecha || new Date().toLocaleDateString());
+  setText("factura_no", pedido || "-");
+  if (cliente){ document.getElementById("cliente_row").style.display="block"; document.getElementById("cliente_val").style.display="block"; setText("cliente_val", cliente); }
+  if (direccion){ document.getElementById("dir_row").style.display="block"; document.getElementById("dir_val").style.display="block"; setText("dir_val", direccion); }
+  if (estado){ setText("estado_view", estado); }
 
-  const len = Math.max(descs.length, cantidades.length, upcs.length, unitP.length);
-  for (let i=0; i<len; i++){
-    const qty   = parseInt(cantidades[i] || "0", 10) || 0;
-    const name  = (descs[i] || "");
-    const upc   = (upcs[i] || "").trim();
-    const puNum = parseFloat((unitP[i]||"").toString().replace(/[^\d.-]/g,"")) || 0;
-    const lineTotal = qty * puNum;
+  /* --- Filas --- */
+  const tbody = document.getElementById("rows");
+  let units = 0, grand = 0;
+  const len = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
 
-    if (!name && !qty && !puNum) continue;
+  for (let i=0;i<len;i++){
+    const qty   = num(cantidades[i]);   // limpia "1" o " 1 "
+    const unit  = num(p_units[i]);      // limpia "$2.00", "RD$2.00", etc.
+    const line  = qty * unit;
 
-    totalUnidades += qty;
+    units += qty;
+    grand += line;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td class="qty">${qty}</td>
-      <td class="desc">
-        ${name ? name.replaceAll("|"," ") : ""}
-        ${puNum ? `<span class="sub uprice">$${money(puNum)}</span>` : ""}
-        ${upc ? `<span class="sub">UPC: ${upc}</span>` : ""}
+      <td class="qty-col">${qty || ""}</td>
+      <td class="upc-col">${upcs[i] || ""}</td>
+      <td class="desc-col">
+        ${(descripciones[i] || "")}${descripciones[i] ? "<br/>" : ""}<span class="price-inline">$${fmt(unit)}</span>
       </td>
-      <td class="ttl">$${money(lineTotal)}</td>
+      <td class="total-col">$${fmt(line)}</td>
     `;
-    body.appendChild(tr);
+    tbody.appendChild(tr);
   }
 
-  document.getElementById("uTotal").textContent = totalUnidades;
-  document.getElementById("total").textContent  = `$${money(qs.get("total")||0)}`;
-
-  // ====== COMPARTIR / IMPRIMIR EN iPHONE (Epson TM Print Assistant) ======
-  const btnShare = document.getElementById('btnShare');
-  const openImg  = document.getElementById('openImg');
-  const hint     = document.getElementById('hint');
-
-  async function shareTicket(){
-    try{
-      const el = document.getElementById('ticket');
-      // Capturar solo el ticket (ancho 58mm) y escalar 2x para mejor definición
-      const canvas = await html2canvas(el, {scale: 2, backgroundColor: "#fff"});
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/png', 1));
-      if (!blob) throw new Error("No se pudo generar la imagen");
-
-      const file = new File([blob], 'ticket.png', {type:'image/png'});
-
-      // Si el navegador soporta Web Share con archivos, abrir hoja de compartir
-      if (navigator.canShare && navigator.canShare({ files:[file] }) && navigator.share){
-        await navigator.share({
-          files: [file],
-          title: 'Ticket',
-          text: 'Ticket de venta'
-        });
-      } else {
-        // Fallback: abrir/descargar imagen y mostrar instrucción
-        const url = URL.createObjectURL(blob);
-        openImg.href = url;
-        openImg.hidden = false;
-        hint.hidden = false;
-        // En iOS: al tocar "Abrir imagen" luego usa el botón Compartir → Epson TM Print Assistant
-      }
-    }catch(err){
-      alert('No se pudo compartir: ' + String(err));
-    }
-  }
-
-  btnShare.addEventListener('click', shareTicket);
-})();
+  /* --- Totales --- */
+  setText("units", units);
+  setText("grand", "$" + fmt(grand));
 </script>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=80mm, initial-scale=1.0" />
+  <title>Ticket de Compra</title>
+  <style>
+    /* ====== Estilos para 80mm térmica ====== */
+    :root{
+      --w: 80mm;
+      --font: "Courier New", monospace;
+      --fs: 3.0mm;         /* tamaño base */
+      --fs-head: 4.2mm;    /* título */
+      --fs-sub: 2.8mm;     /* subtítulos y celdas */
+      --gap: 1.6mm;
+      --line: #000;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; padding:0;
+      background:#fff; color:#000;
+      font-family:var(--font);
+      font-size:var(--fs);
+    }
+    #ticket{
+      width: var(--w);
+      max-width: var(--w);
+      padding: 2mm 2mm 1mm;
+      margin: 0 auto;
+    }
+
+    /* Encabezado */
+    .store-header{ text-align:center; margin-bottom: 2mm; }
+    .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; letter-spacing: .3mm; }
+    .store-details{ font-size: var(--fs-sub); line-height:1.2; margin-top: .6mm; }
+
+    /* Tabla */
+    table{ width:100%; border-collapse: collapse; margin-top: 2mm; }
+    thead th{
+      text-align:left; font-weight:700; font-size: var(--fs);
+      border-bottom: 0.3mm solid var(--line);
+      padding-bottom: 0.6mm;
+    }
+    td{ font-size: var(--fs-sub); vertical-align: top; padding-top: .8mm; }
+
+    .qty-col{ width: 10mm; text-align: right; padding-right: 1mm; }
+    .upc-col{ width: 28mm; }
+    .desc-col{ width: 26mm; }
+    .total-col{ width: 12mm; text-align: right; }
+
+    .price-inline{ display:block; font-weight:700; } /* precio debajo */
+    .row{ border-bottom: 0.3mm dashed #000; }
+    .row:last-child{ border-bottom: none; }
+
+    /* Totales */
+    .totals{ margin-top: 2mm; font-size: var(--fs); }
+    .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; }
+    .bold{ font-weight:700; }
+
+    /* Pie */
+    .footer{ text-align:center; margin-top: 2mm; font-size: var(--fs-sub); font-weight:700; }
+
+    /* Impresión */
+    @media print{
+      html, body{ width: var(--w); }
+      #printBtn{ display:none !important; }
+      @page{ size: var(--w) auto; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="ticket">
+    <!-- Encabezado empresa -->
+    <div class="store-header">
+      <div class="store-title">MD MAGUEY DISTRIBUTOR</div>
+      <div class="store-details">
+        250 ROBINSON AVE #2 · BRONX NY 10465<br>
+        Tel: 347-589-2676
+      </div>
+      <div class="store-details" style="text-align:left; margin-top:1mm;">
+        Fecha: <span id="fecha_text"></span><br>
+        Factura No.: <span id="factura_text"></span><br>
+        <span id="cliente_wrap" style="display:none;">Cliente: <span id="cliente_text"></span><br></span>
+        <span id="dir_wrap" style="display:none;">Dirección: <span id="dir_text"></span></span>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <table>
+      <thead>
+        <tr>
+          <th class="qty-col">QTY</th>
+          <th class="upc-col">UPC</th>
+          <th class="desc-col">DESCRIPCIÓN</th>
+          <th class="total-col">TOTAL</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <!-- Totales -->
+    <div class="totals">
+      <div class="total-line">
+        <span>Total Unidades</span>
+        <span id="units">0</span>
+      </div>
+      <div class="total-line bold">
+        <span>TOTAL A PAGAR</span>
+        <span id="grand">$0.00</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      Gracias por su compra
+      <div id="estado_text" style="margin-top:1mm;"></div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Utilidades =====
+    const fmt = v => Number(v||0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+    const split = s => String(s||"").split(",").map(x=>x.trim()).filter(x=>x!=="");
+    // Limpia "$2.00", "RD$ 1,234.50", etc.
+    const num = s => {
+      const cleaned = String(s||"").replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"");
+      const n = parseFloat(cleaned);
+      return isNaN(n) ? 0 : n;
+    };
+    const setText = (id, val) => { const el=document.getElementById(id); if(el) el.textContent = val; };
+
+    // ===== Parámetros =====
+    const q = new URLSearchParams(location.search);
+    const boleta = q.get("boleta") || "";
+    const mesa = q.get("mesa") || "";
+    const direccion = q.get("direccion") || "";
+    const fecha = q.get("fecha") || new Date().toLocaleDateString();
+    const estado = q.get("estado") || "";
+
+    let cantidades    = split(q.get("cantidades"));
+    let descripciones = split(q.get("servicios"));
+    let upcs          = split(q.get("upcs"));
+    let p_units       = split(q.get("p_unit"));  // precio unitario (ideal: sin $)
+
+    // ===== Header =====
+    setText("fecha_text", fecha);
+    setText("factura_text", boleta || "-");
+    if(mesa){
+      document.getElementById("cliente_wrap").style.display = "inline";
+      setText("cliente_text", mesa);
+    }
+    if(direccion){
+      document.getElementById("dir_wrap").style.display = "inline";
+      setText("dir_text", direccion);
+    }
+    setText("estado_text", estado);
+
+    // ===== Filas =====
+    const tbody = document.getElementById("tbody");
+    let units=0, grand=0;
+    const n = Math.max(descripciones.length, upcs.length, p_units.length, cantidades.length);
+
+    for(let i=0;i<n;i++){
+      const qty  = num(cantidades[i]);
+      const upc  = upcs[i] || "";
+      const name = descripciones[i] || "";
+      const unit = num(p_units[i]);         // limpia por si llega "RD$2.00"
+      const line = qty * unit;
+
+      units += qty;
+      grand += line;
+
+      const tr = document.createElement("tr");
+      tr.className = "row";
+      tr.innerHTML = `
+        <td class="qty-col">${qty || ""}</td>
+        <td class="upc-col">${upc}</td>
+        <td class="desc-col">${name}<span class="price-inline">$${fmt(unit)}</span></td>
+        <td class="total-col">$${fmt(line)}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    // ===== Totales =====
+    setText("units", units);
+    setText("grand", "$"+fmt(grand));
+
+    // ===== Imprimir =====
+    function tryPrint(){ setTimeout(() => window.print(), 250); }
+    if (document.readyState === "complete") tryPrint(); else window.addEventListener("load", tryPrint);
+
+    // Botón de respaldo (si el navegador bloquea print)
+    const btn=document.createElement("button");
+    btn.id="printBtn";
+    btn.textContent="Imprimir";
+    btn.style="position:fixed;right:8px;bottom:8px;padding:6px 10px;border:1px solid #000;background:#fff;color:#000;border-radius:6px;cursor:pointer;z-index:9999";
+    btn.onclick=()=>window.print();
+    document.body.appendChild(btn);
+  </script>
 </body>
 </html>
+)
