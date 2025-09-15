@@ -5,72 +5,49 @@
   <meta name="viewport" content="width=58mm, initial-scale=1.0" />
   <title>Ticket 58mm</title>
   <style>
-    /* ====== Estilos para impresora térmica 58 mm ====== */
     :root{
-      --w: 58mm;                       /* ancho papel */
+      --w: 58mm;
       --font: "Courier New", monospace;
-      --fs: 2.6mm;                     /* texto base */
-      --fs-head: 3.6mm;                /* título */
-      --fs-sub: 2.3mm;                 /* celdas/pequeño */
+      --fs: 2.6mm;       /* base */
+      --fs-head: 3.6mm;  /* título */
+      --fs-sub: 2.2mm;   /* líneas secundarias */
       --line: #000;
     }
-    *{ box-sizing: border-box; }
-    html, body{
-      margin:0; padding:0;
-      background:#fff; color:#000;
-      font-family:var(--font);
-      font-size:var(--fs);
-    }
-    #ticket{
-      width: var(--w);
-      max-width: var(--w);
-      margin: 0 auto;
-      padding: 2mm 2mm 1mm;
-    }
+    *{ box-sizing:border-box }
+    html,body{ margin:0; padding:0; background:#fff; color:#000; font-family:var(--font); font-size:var(--fs); }
+    #ticket{ width:var(--w); max-width:var(--w); margin:0 auto; padding:2mm 2mm 1mm; }
 
-    /* Cabecera */
     .store-header{ text-align:center; }
-    .store-title{
-      font-size: var(--fs-head);
-      font-weight: 700;
-      margin: 0 0 1mm 0;
-      letter-spacing: .2mm;
-    }
-    .store-details{ font-size: var(--fs-sub); line-height: 1.25; }
-    .hr{ border-bottom: .3mm dashed var(--line); margin: 2mm 0 1.5mm; }
+    .store-title{ font-size:var(--fs-head); font-weight:700; margin:0 0 1mm; letter-spacing:.2mm; }
+    .store-details{ font-size:var(--fs-sub); line-height:1.25; }
+    .hr{ border-bottom:.3mm dashed var(--line); margin:2mm 0 1.5mm; }
 
-    /* Tabla */
-    table{ width:100%; border-collapse: collapse; }
-    thead th{
-      text-align:left;
-      font-weight:700;
-      border-bottom: .3mm solid var(--line);
-      padding-bottom: .7mm;
-    }
-    td{ vertical-align: top; padding-top: .9mm; font-size: var(--fs-sub); }
+    table{ width:100%; border-collapse:collapse; }
+    thead th{ text-align:left; font-weight:700; border-bottom:.3mm solid var(--line); padding-bottom:.7mm; }
+    td{ vertical-align:top; padding-top:.9mm; font-size:var(--fs-sub); }
 
-    .qty-col{ width: 8mm; text-align: right; padding-right: .7mm; }
-    .upc-col{ width: 18mm; }
-    .desc-col{ width: 26mm; }
-    .total-col{ width: 10mm; text-align: right; }
+    /* columnas: QTY | DESCRIPCIÓN | TOTAL (sin columna UPC) */
+    .qty-col{ width:8mm; text-align:right; padding-right:.7mm; }
+    .desc-col{ width:38mm; }    /* la mayor parte del ancho */
+    .total-col{ width:10mm; text-align:right; }
 
-    .price-inline{ display:block; font-weight:700; } /* precio debajo del nombre */
-    .row{ border-bottom: .3mm dotted #000; }
-    .row:last-child{ border-bottom: none; }
+    .row{ border-bottom:.3mm dotted #000; }
+    .row:last-child{ border-bottom:none; }
 
-    /* Totales */
-    .totals{ margin-top: 2mm; }
-    .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; }
+    /* Línea secundaria debajo del nombre: $unit y UPC */
+    .meta{ margin-top:.2mm; font-size:var(--fs-sub); }
+    .meta .unit{ font-weight:700; }
+    .meta .sep{ padding:0 1mm; color:#333; }
+
+    .totals{ margin-top:2mm; }
+    .total-line{ display:flex; justify-content:space-between; margin-top:1mm; }
     .bold{ font-weight:700; }
+    .footer{ text-align:center; margin-top:2mm; font-size:var(--fs-sub); font-weight:700; }
 
-    /* Pie */
-    .footer{ text-align:center; margin-top: 2mm; font-size: var(--fs-sub); font-weight:700; }
-
-    /* Impresión */
     @media print{
-      html, body{ width: var(--w); }
+      html,body{ width:var(--w); }
       #printBtn{ display:none !important; }
-      @page{ size: var(--w) auto; margin: 0; }
+      @page{ size:var(--w) auto; margin:0; }
     }
   </style>
 </head>
@@ -87,7 +64,7 @@
     <div class="hr"></div>
 
     <div class="store-details">
-      Fecha:  <span id="fecha_text"></span><br>
+      Fecha: <span id="fecha_text"></span><br>
       Factura No.: <span id="factura_text"></span><br>
       <span id="cliente_wrap" style="display:none;">Cliente: <span id="cliente_text"></span><br></span>
       <span id="dir_wrap" style="display:none;">Dirección: <span id="dir_text"></span></span>
@@ -99,7 +76,6 @@
       <thead>
         <tr>
           <th class="qty-col">QTY</th>
-          <th class="upc-col">UPC</th>
           <th class="desc-col">DESCRIPCIÓN</th>
           <th class="total-col">TOTAL</th>
         </tr>
@@ -109,12 +85,10 @@
 
     <div class="totals">
       <div class="total-line">
-        <span>Total Unidades</span>
-        <span id="units">0</span>
+        <span>Total Unidades</span><span id="units">0</span>
       </div>
       <div class="total-line bold">
-        <span>TOTAL A PAGAR</span>
-        <span id="grand">$0.00</span>
+        <span>TOTAL A PAGAR</span><span id="grand">$0.00</span>
       </div>
     </div>
 
@@ -125,13 +99,13 @@
   </div>
 
   <script>
-    /* ===== Utilidades ===== */
+    /* Utilidades */
     const fmt = v => Number(v||0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
     const split = s => String(s||"").split(/[;,]/).map(x=>x.trim()).filter(x=>x!=="");
     const num = s => { const n=parseFloat(String(s||"").replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
     const setText = (id, val) => { const el=document.getElementById(id); if(el) el.textContent = val; };
 
-    /* ===== Parámetros ===== */
+    /* Parámetros */
     const q = new URLSearchParams(location.search);
     const boleta     = q.get("boleta")    || "";
     const mesa       = q.get("mesa")      || "";
@@ -144,14 +118,14 @@
     let upcs          = split(q.get("upcs"));
     let p_units       = split(q.get("p_unit"));
 
-    /* ===== Header (IDs correctos) ===== */
+    /* Header */
     setText("fecha_text", fecha);
     setText("factura_text", boleta || "-");
     if(mesa){ document.getElementById("cliente_wrap").style.display="inline"; setText("cliente_text", mesa); }
     if(direccion){ document.getElementById("dir_wrap").style.display="inline"; setText("dir_text", direccion); }
     if(estado){ setText("estado_text", estado); }
 
-    /* ===== Filas ===== */
+    /* Filas */
     const tbody = document.getElementById("tbody");
     let units=0, grand=0;
     const n = Math.max(descripciones.length, upcs.length, p_units.length, cantidades.length);
@@ -160,28 +134,29 @@
       const qty  = num(cantidades[i]);
       const upc  = upcs[i] || "";
       const name = descripciones[i] || "";
-      const unit = num(p_units[i]);      // acepta "2", "$2.00", "RD$ 2.00"
+      const unit = num(p_units[i]);
       const line = qty * unit;
 
-      units += qty;
-      grand += line;
+      units += qty; grand += line;
 
       const tr = document.createElement("tr");
       tr.className = "row";
       tr.innerHTML = `
         <td class="qty-col">${qty || ""}</td>
-        <td class="upc-col">${upc}</td>
-        <td class="desc-col">${name}<span class="price-inline">$${fmt(unit)}</span></td>
+        <td class="desc-col">
+          ${name}
+          <div class="meta"><span class="unit">$${fmt(unit)}</span><span class="sep">·</span>UPC: ${upc}</div>
+        </td>
         <td class="total-col">$${fmt(line)}</td>
       `;
       tbody.appendChild(tr);
     }
 
-    /* ===== Totales ===== */
+    /* Totales */
     setText("units", units);
     setText("grand", "$"+fmt(grand));
 
-    /* ===== Auto print + botón de respaldo ===== */
+    /* Auto print + botón */
     const tryPrint = () => setTimeout(()=>window.print(), 250);
     if (document.readyState === "complete") tryPrint(); else window.addEventListener("load", tryPrint);
 
