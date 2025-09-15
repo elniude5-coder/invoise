@@ -7,52 +7,81 @@
   <style>
     :root{
       --w: 58mm;
-      --font: "Courier New", monospace;
-      --fs: 2.6mm;       /* base */
-      --fs-head: 3.6mm;  /* título */
-      --fs-sub: 2.2mm;   /* líneas secundarias */
+      --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --fs: 2.8mm;       /* texto base */
+      --fs-head: 4.0mm;  /* título */
+      --fs-sub: 2.6mm;   /* celdas pequeñas */
       --line: #000;
     }
-    *{ box-sizing:border-box }
-    html,body{ margin:0; padding:0; background:#fff; color:#000; font-family:var(--font); font-size:var(--fs); }
-    #ticket{ width:var(--w); max-width:var(--w); margin:0 auto; padding:2mm 2mm 1mm; }
-
-    .store-header{ text-align:center; }
-    .store-title{ font-size:var(--fs-head); font-weight:700; margin:0 0 1mm; letter-spacing:.2mm; }
-    .store-details{ font-size:var(--fs-sub); line-height:1.25; }
-    .hr{ border-bottom:.3mm dashed var(--line); margin:2mm 0 1.5mm; }
-
-    table{ width:100%; border-collapse:collapse; }
-    thead th{ text-align:left; font-weight:700; border-bottom:.3mm solid var(--line); padding-bottom:.7mm; }
-    td{ vertical-align:top; padding-top:.9mm; font-size:var(--fs-sub); }
-
-    /* columnas: QTY | DESCRIPCIÓN | TOTAL (sin columna UPC) */
-    .qty-col{ width:8mm; text-align:right; padding-right:.7mm; }
-    .desc-col{ width:38mm; }    /* la mayor parte del ancho */
-    .total-col{ width:10mm; text-align:right; }
-
-    .row{ border-bottom:.3mm dotted #000; }
-    .row:last-child{ border-bottom:none; }
-
-    /* Línea secundaria debajo del nombre: $unit y UPC */
-    .meta{ margin-top:.2mm; font-size:var(--fs-sub); }
-    .meta .unit{ font-weight:700; }
-    .meta .sep{ padding:0 1mm; color:#333; }
-
-    .totals{ margin-top:2mm; }
-    .total-line{ display:flex; justify-content:space-between; margin-top:1mm; }
-    .bold{ font-weight:700; }
-    .footer{ text-align:center; margin-top:2mm; font-size:var(--fs-sub); font-weight:700; }
-
-    @media print{
-      html,body{ width:var(--w); }
-      #printBtn{ display:none !important; }
-      @page{ size:var(--w) auto; margin:0; }
+    *{ box-sizing: border-box; }
+    html, body{
+      margin:0; padding:0; background:#fff; color:#000;
+      font-family:var(--font);
+      font-size:var(--fs);
+      width: var(--w);
     }
+    #ticket{
+      width: var(--w);
+      max-width: var(--w);
+      padding: 2mm 2mm 2mm;
+      margin: 0 auto;
+    }
+
+    /* Encabezado */
+    .store-header{ text-align:center; margin-bottom: 2mm; }
+    .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; letter-spacing: .2mm; }
+    .store-details{ font-size: var(--fs-sub); line-height:1.25; margin-top: .6mm; }
+    .divider{ border-top: .3mm dashed var(--line); margin: 2mm 0; }
+
+    /* Tabla */
+    table{ width:100%; border-collapse: collapse; margin-top: 1mm; }
+    thead th{
+      text-align:left; font-weight:700; font-size: var(--fs);
+      border-bottom: 0.3mm solid var(--line);
+      padding: 0 0 .8mm 0;
+    }
+    td{ vertical-align: top; padding-top: 1.0mm; font-size: var(--fs-sub); }
+
+    .qty-col{ width: 9mm; text-align: right; padding-right: 1mm; }
+    .desc-col{ width: calc(100% - 9mm - 14mm); }
+    .total-col{ width: 14mm; text-align: right; }
+
+    .line-row{ border-bottom: 0.3mm dashed #000; }
+    .line-row:last-child{ border-bottom: none; }
+
+    .item-name{ display:block; font-size: var(--fs); }
+    .unit-price{ display:block; font-weight:700; margin-top: .2mm; }      /* Precio debajo del nombre */
+    .upc{ display:block; margin-top: .2mm; font-size: var(--fs-sub); }    /* UPC debajo del precio */
+
+    /* Totales */
+    .totals{ margin-top: 2mm; font-size: var(--fs); }
+    .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; }
+    .bold{ font-weight:700; }
+
+    /* Pie */
+    .footer{ text-align:center; margin-top: 2mm; font-weight:700; }
+
+    /* Impresión navegador */
+    @media print{
+      #uiBtns{ display:none !important; }
+      @page{ size: var(--w) auto; margin: 0; }
+    }
+
+    /* Botonera flotante */
+    #uiBtns{
+      position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999;
+      flex-direction: column;
+    }
+    .btn{
+      padding:6px 10px; border-radius:6px; border:1px solid #000; background:#fff; color:#000; cursor:pointer;
+      font-family: var(--font); font-size: 12px;
+    }
+    .btn-green{ border-color:#0a0; color:#0a0; background:#eaffea; }
   </style>
 </head>
 <body>
   <div id="ticket">
+    <!-- Encabezado empresa -->
     <div class="store-header">
       <div class="store-title">MD MAGUEY DISTRIBUTOR</div>
       <div class="store-details">
@@ -61,17 +90,19 @@
       </div>
     </div>
 
-    <div class="hr"></div>
+    <div class="divider"></div>
 
-    <div class="store-details">
-      Fecha: <span id="fecha_text"></span><br>
-      Factura No.: <span id="factura_text"></span><br>
-      <span id="cliente_wrap" style="display:none;">Cliente: <span id="cliente_text"></span><br></span>
-      <span id="dir_wrap" style="display:none;">Dirección: <span id="dir_text"></span></span>
+    <!-- Datos cabecera -->
+    <div>
+      <div><b>Fecha:</b> <span id="fecha_text"></span></div>
+      <div><b>Factura No.:</b> <span id="factura_text"></span></div>
+      <div id="cliente_wrap" style="display:none;"><b>Cliente:</b> <span id="cliente_text"></span></div>
+      <div id="dir_wrap" style="display:none;"><b>Dirección:</b> <span id="dir_text"></span></div>
     </div>
 
-    <div class="hr"></div>
+    <div class="divider"></div>
 
+    <!-- Tabla -->
     <table>
       <thead>
         <tr>
@@ -83,89 +114,156 @@
       <tbody id="tbody"></tbody>
     </table>
 
+    <!-- Totales -->
     <div class="totals">
       <div class="total-line">
-        <span>Total Unidades</span><span id="units">0</span>
+        <span>Total Unidades</span>
+        <span id="units">0</span>
       </div>
       <div class="total-line bold">
-        <span>TOTAL A PAGAR</span><span id="grand">$0.00</span>
+        <span>TOTAL A PAGAR</span>
+        <span id="grand">$0.00</span>
       </div>
     </div>
 
+    <div class="divider"></div>
     <div class="footer">
-      ¡Gracias por su compra!
-      <div id="estado_text" style="margin-top:1mm;"></div>
+      ¡Gracias por su compra!<br>
+      <span id="estado_text"></span>
     </div>
   </div>
 
+  <!-- Botones -->
+  <div id="uiBtns">
+    <button id="printBtn" class="btn">Imprimir</button>
+    <button id="epsonBtn" class="btn btn-green">Enviar a Epson</button>
+  </div>
+
+  <!-- Librerías para PDF 58mm -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
   <script>
-    /* Utilidades */
-    const fmt = v => Number(v||0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
-    const split = s => String(s||"").split(/[;,]/).map(x=>x.trim()).filter(x=>x!=="");
-    const num = s => { const n=parseFloat(String(s||"").replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
-    const setText = (id, val) => { const el=document.getElementById(id); if(el) el.textContent = val; };
+    /* ========= Utilidades ========= */
+    const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+    const splitAny = s => String(s || "")
+      .split(/[;,]/)             // coma o punto y coma
+      .map(x => x.trim())
+      .filter(x => x !== "");
+    // Limpia "$2.00", "RD$ 1,234.50", " 36.00 " -> 2, 1234.5, 36
+    const num = s => {
+      if (s == null) return 0;
+      const cleaned = String(s)
+        .replace(/\u00A0/g, " ")
+        .replace(/\s+/g, "")
+        .replace(/[^0-9.\-]/g, "");
+      const n = parseFloat(cleaned);
+      return isNaN(n) ? 0 : n;
+    };
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-    /* Parámetros */
+    /* ========= Leer parámetros ========= */
     const q = new URLSearchParams(location.search);
-    const boleta     = q.get("boleta")    || "";
-    const mesa       = q.get("mesa")      || "";
-    const direccion  = q.get("direccion") || "";
-    const fecha      = q.get("fecha")     || new Date().toLocaleDateString();
-    const estado     = q.get("estado")    || "";
+    const boleta    = q.get("boleta")    || "";
+    const mesa      = q.get("mesa")      || "";
+    const direccion = q.get("direccion") || "";
+    const fecha     = q.get("fecha")     || new Date().toLocaleDateString();
+    const estado    = q.get("estado")    || "";
 
-    let cantidades    = split(q.get("cantidades"));
-    let descripciones = split(q.get("servicios"));
-    let upcs          = split(q.get("upcs"));
-    let p_units       = split(q.get("p_unit"));
+    // Listas (acepta , o ;)
+    let cantidades    = splitAny(q.get("cantidades"));
+    let descripciones = splitAny(q.get("servicios"));
+    let upcs          = splitAny(q.get("upcs"));
+    let p_units       = splitAny(q.get("p_unit"));   // puede venir con $ o RD$
 
-    /* Header */
+    /* ========= Header ========= */
     setText("fecha_text", fecha);
     setText("factura_text", boleta || "-");
-    if(mesa){ document.getElementById("cliente_wrap").style.display="inline"; setText("cliente_text", mesa); }
-    if(direccion){ document.getElementById("dir_wrap").style.display="inline"; setText("dir_text", direccion); }
-    if(estado){ setText("estado_text", estado); }
+    if(mesa){ document.getElementById("cliente_wrap").style.display = "block"; setText("cliente_text", mesa); }
+    if(direccion){ document.getElementById("dir_wrap").style.display = "block"; setText("dir_text", direccion); }
+    setText("estado_text", estado);
 
-    /* Filas */
+    /* ========= Filas ========= */
     const tbody = document.getElementById("tbody");
-    let units=0, grand=0;
-    const n = Math.max(descripciones.length, upcs.length, p_units.length, cantidades.length);
+    let units = 0, grand = 0;
+    const n = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
 
-    for(let i=0;i<n;i++){
-      const qty  = num(cantidades[i]);
-      const upc  = upcs[i] || "";
-      const name = descripciones[i] || "";
-      const unit = num(p_units[i]);
-      const line = qty * unit;
+    for (let i=0; i<n; i++){
+      const qty   = num(cantidades[i]);
+      const name  = descripciones[i] || "";
+      const unit  = num(p_units[i]);
+      const upc   = upcs[i] || "";
+      const line  = qty * unit;
 
-      units += qty; grand += line;
+      units += qty;
+      grand += line;
 
       const tr = document.createElement("tr");
-      tr.className = "row";
+      tr.className = "line-row";
       tr.innerHTML = `
         <td class="qty-col">${qty || ""}</td>
         <td class="desc-col">
-          ${name}
-          <div class="meta"><span class="unit">$${fmt(unit)}</span><span class="sep">·</span>UPC: ${upc}</div>
+          <span class="item-name">${name}</span>
+          <span class="unit-price">$${fmt(unit)}</span>
+          <span class="upc">UPC: ${upc}</span>
         </td>
         <td class="total-col">$${fmt(line)}</td>
       `;
       tbody.appendChild(tr);
     }
 
-    /* Totales */
     setText("units", units);
-    setText("grand", "$"+fmt(grand));
+    setText("grand", "$" + fmt(grand));
 
-    /* Auto print + botón */
-    const tryPrint = () => setTimeout(()=>window.print(), 250);
-    if (document.readyState === "complete") tryPrint(); else window.addEventListener("load", tryPrint);
+    /* ========= Botón Imprimir (navegador) ========= */
+    document.getElementById("printBtn").onclick = () => window.print();
 
-    const btn=document.createElement("button");
-    btn.id="printBtn";
-    btn.textContent="Imprimir";
-    btn.style="position:fixed;right:6px;bottom:6px;padding:6px 10px;border:1px solid #000;background:#fff;color:#000;border-radius:6px;cursor:pointer;z-index:9999";
-    btn.onclick=()=>window.print();
-    document.body.appendChild(btn);
+    /* ========= Enviar a Epson (PDF 58mm real) ========= */
+    document.getElementById("epsonBtn").onclick = async () => {
+      try {
+        const ticket = document.getElementById('ticket');
+        // Captura el ticket en alta resolución para nitidez
+        const canvas = await html2canvas(ticket, {
+          scale: 2,
+          backgroundColor: '#ffffff'
+        });
+        const imgData = canvas.toDataURL('image/png');
+
+        // Medidas reales del PDF
+        const mmWidth = 58; // ancho papel
+        const mmHeight = mmWidth * (canvas.height / canvas.width); // alto proporcional
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: [mmWidth, mmHeight] });
+        doc.addImage(imgData, 'PNG', 0, 0, mmWidth, mmHeight);
+
+        // Blob/File del PDF
+        const pdfBlob = doc.output('blob');
+        const pdfFile = new File([pdfBlob], 'ticket_58mm.pdf', { type: 'application/pdf' });
+
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+          await navigator.share({
+            files: [pdfFile],
+            title: 'Ticket 58mm',
+            text: 'Imprimir en Epson TM Print Assistant'
+          });
+        } else {
+          // Fallback: descarga para abrir manualmente con Epson
+          const url = URL.createObjectURL(pdfBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'ticket_58mm.pdf';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          alert('Se guardó "ticket_58mm.pdf". Ábrelo con Epson TM Print Assistant. Asegúrate de Paper size=58 mm y sin "Fit to page".');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('No pude generar/enviar el PDF 58mm: ' + e.message);
+      }
+    };
   </script>
 </body>
 </html>
