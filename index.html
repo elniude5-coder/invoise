@@ -8,9 +8,11 @@
     :root{
       --w: 58mm;
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      --fs: 2.8mm;       /* texto base */
-      --fs-head: 4.0mm;  /* título */
-      --fs-sub: 2.6mm;   /* celdas pequeñas */
+
+      /* Tamaños ajustados para mayor legibilidad en térmica */
+      --fs: 3.2mm;        /* texto base (antes 2.8mm) */
+      --fs-head: 4.6mm;   /* título empresa (antes 4.0mm) */
+      --fs-sub: 2.9mm;    /* celdas/UPCs (antes 2.6mm) */
       --line: #000;
     }
     *{ box-sizing: border-box; }
@@ -29,7 +31,7 @@
 
     /* Encabezado */
     .store-header{ text-align:center; margin-bottom: 2mm; }
-    .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; letter-spacing: .2mm; }
+    .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; letter-spacing: .2mm; text-transform: uppercase; }
     .store-details{ font-size: var(--fs-sub); line-height:1.25; margin-top: .6mm; }
     .divider{ border-top: .3mm dashed var(--line); margin: 2mm 0; }
 
@@ -49,17 +51,19 @@
     .line-row{ border-bottom: 0.3mm dashed #000; }
     .line-row:last-child{ border-bottom: none; }
 
-    .item-name{ display:block; font-size: var(--fs); }
-    .unit-price{ display:block; font-weight:700; margin-top: .2mm; }      /* Precio debajo del nombre */
-    .upc{ display:block; margin-top: .2mm; font-size: var(--fs-sub); }    /* UPC debajo del precio */
+    .item-name{ display:block; font-size: var(--fs); font-weight:700; }  /* ahora siempre negrita */
+    .unit-price{ display:block; font-weight:700; margin-top: .2mm; }
+    .upc{ display:block; margin-top: .2mm; font-size: var(--fs-sub); }
 
     /* Totales */
     .totals{ margin-top: 2mm; font-size: var(--fs); }
     .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; }
     .bold{ font-weight:700; }
+    /* Agrandar la cifra del TOTAL A PAGAR sin romper layout */
+    .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1mm); font-weight:800; }
 
     /* Pie */
-    .footer{ text-align:center; margin-top: 2mm; font-weight:700; }
+    .footer{ text-align:center; margin-top: 2mm; font-weight:700; font-size: var(--fs-sub); }
 
     /* Impresión navegador */
     @media print{
@@ -165,7 +169,7 @@
     /* ========= Leer parámetros ========= */
     const q = new URLSearchParams(location.search);
     const boleta    = q.get("boleta")    || "";
-    const mesa      = q.get("mesa")      || "";
+    the mesa      = q.get("mesa")      || "";
     const direccion = q.get("direccion") || "";
     const fecha     = q.get("fecha")     || new Date().toLocaleDateString();
     const estado    = q.get("estado")    || "";
