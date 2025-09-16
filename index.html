@@ -6,26 +6,30 @@
   <title>Ticket 58mm</title>
   <style>
     :root{
-      --w: 58mm;
+      /* Papel 58mm, usamos 48mm de área útil para calidad */
+      --paper: 58mm;
+      --w: 48mm;
+
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-      /* Tamaños ajustados para mayor legibilidad en térmica */
-      --fs: 3.2mm;        /* texto base */
+      /* Tamaños legibles en térmica */
+      --fs: 3.2mm;        /* base */
       --fs-head: 4.6mm;   /* título */
-      --fs-sub: 2.9mm;    /* celdas pequeñas */
+      --fs-sub: 2.9mm;    /* detalles */
       --line: #000;
     }
-    *{ box-sizing: border-box; }
+
+    *{ box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     html, body{
       margin:0; padding:0; background:#fff; color:#000;
       font-family:var(--font);
       font-size:var(--fs);
-      width: var(--w);
+      width: var(--paper);
     }
     #ticket{
       width: var(--w);
       max-width: var(--w);
-      padding: 2mm 2mm 2mm;
+      padding: 2mm 1.5mm 2mm;   /* margen interno */
       margin: 0 auto;
     }
 
@@ -42,38 +46,37 @@
       border-bottom: 0.3mm solid var(--line);
       padding: 0 0 .8mm 0;
     }
-    td{ vertical-align: top; padding-top: 1.0mm; font-size: var(--fs-sub); line-height:1.25; word-wrap: break-word; }
 
-    /* 👉 Cantidad más a la izquierda y más angosta */
-    .qty-col{ width: 6mm; text-align: left; padding-right: .6mm; }
-    .desc-col{ width: calc(100% - 6mm - 14mm); }
+    /* 👉 Más separación entre QTY y DESCRIPCIÓN */
+    .qty-col{ width: 7mm; text-align: left; padding-right: .6mm; }
+    .desc-col{ width: calc(100% - 7mm - 14mm); padding-left: 1.6mm; } /* empuja todo a la derecha */
     .total-col{ width: 14mm; text-align: right; }
 
+    td{ vertical-align: top; padding-top: 1.0mm; font-size: var(--fs-sub); line-height:1.25; word-wrap: break-word; }
     .line-row{ border-bottom: 0.3mm dashed #000; }
     .line-row:last-child{ border-bottom: none; }
 
+    /* 👉 Descripción más a la derecha (indent) */
     .item-name{ display:block; font-size: var(--fs); font-weight:700; }
-
-    /* 👉 Precio y UPC en la MISMA línea */
     .meta-line{
       display:flex; justify-content: space-between; align-items: baseline; margin-top: .2mm;
     }
     .unit-price{ font-weight:700; }
 
-    /* 👉 UPC más grande y en negro/negra */
+    /* 👉 UPC más grande y en negrita */
     .upc-inline{
-      font-size: var(--fs);         /* un poco más grande que el subtexto */
-      font-weight:800;              /* más “grueso” */
-      color:#000;                   /* fuerza negro */
+      font-size: var(--fs);   /* más grande que subtexto */
+      font-weight:800;
+      color:#000;
       margin-left: 2mm;
-      white-space: nowrap;          /* evita saltos feos si cabe */
+      white-space: nowrap;
     }
 
     /* Totales */
     .totals{ margin-top: 2mm; font-size: var(--fs); }
     .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; }
     .bold{ font-weight:700; }
-    .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1mm); font-weight:800; } /* TOTAL A PAGAR más grande */
+    .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1mm); font-weight:800; }
 
     /* Pie */
     .footer{ text-align:center; margin-top: 2mm; font-weight:700; font-size: var(--fs-sub); }
@@ -81,10 +84,10 @@
     /* Impresión navegador */
     @media print{
       #uiBtns{ display:none !important; }
-      @page{ size: var(--w) auto; margin: 0; }
+      @page{ size: var(--paper) auto; margin: 0; }
     }
 
-    /* Botonera flotante */
+    /* Botonera */
     #uiBtns{
       position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999;
       flex-direction: column;
@@ -156,25 +159,17 @@
     <button id="epsonBtn" class="btn btn-green">Enviar a Epson</button>
   </div>
 
-  <!-- Librerías para PDF 58mm -->
+  <!-- Librerías -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
     /* ========= Utilidades ========= */
     const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
-    const splitAny = s => String(s || "")
-      .split(/[;,]/)             // coma o punto y coma
-      .map(x => x.trim())
-      .filter(x => x !== "");
-    // Limpia "$2.00", "RD$ 1,234.50", " 36.00 " -> 2, 1234.5, 36
+    const splitAny = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
     const num = s => {
       if (s == null) return 0;
-      const cleaned = String(s)
-        .replace(/\u00A0/g, " ")
-        .replace(/\s+/g, "")
-        .replace(/[^0-9.\-]/g, "");
-      const n = parseFloat(cleaned);
+      const n = parseFloat(String(s).replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,""));
       return isNaN(n) ? 0 : n;
     };
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -187,11 +182,11 @@
     const fecha     = q.get("fecha")     || new Date().toLocaleDateString();
     const estado    = q.get("estado")    || "";
 
-    // Listas (acepta , o ;)
+    // Listas
     let cantidades    = splitAny(q.get("cantidades"));
     let descripciones = splitAny(q.get("servicios"));
     let upcs          = splitAny(q.get("upcs"));
-    let p_units       = splitAny(q.get("p_unit"));   // puede venir con $ o RD$
+    let p_units       = splitAny(q.get("p_unit"));
 
     /* ========= Header ========= */
     setText("fecha_text", fecha);
@@ -234,29 +229,33 @@
     setText("units", units);
     setText("grand", "$" + fmt(grand));
 
-    /* ========= Botón Imprimir (navegador) ========= */
+    /* ========= Imprimir navegador ========= */
     document.getElementById("printBtn").onclick = () => window.print();
 
-    /* ========= Enviar a Epson (PDF 58mm real) ========= */
+    /* ========= Enviar a Epson: máxima calidad ========= */
     document.getElementById("epsonBtn").onclick = async () => {
       try {
         const ticket = document.getElementById('ticket');
-        // Captura el ticket en alta resolución para nitidez
-        const canvas = await html2canvas(ticket, {
-          scale: 2,
-          backgroundColor: '#ffffff'
-        });
-        const imgData = canvas.toDataURL('image/png');
 
-        // Medidas reales del PDF
-        const mmWidth = 58; // ancho papel
-        const mmHeight = mmWidth * (canvas.height / canvas.width); // alto proporcional
+        // Escala alta para nitidez en térmica
+        const canvas = await html2canvas(ticket, {
+          scale: 3,                 // ↑ antes 2
+          backgroundColor: '#ffffff',
+          useCORS: true
+        });
+        const imgData = canvas.toDataURL('image/png'); // PNG = sin compresión
+
+        // Papel 58mm, contenido centrado 48mm
+        const mmPaperW   = 58;
+        const mmContentW = 48;
+        const mmContentH = mmContentW * (canvas.height / canvas.width);
+        const mmTopPad   = 3;                              // margen superior
+        const mmLeftPad  = (mmPaperW - mmContentW) / 2;    // centrar
 
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ unit: 'mm', format: [mmWidth, mmHeight] });
-        doc.addImage(imgData, 'PNG', 0, 0, mmWidth, mmHeight);
+        const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH + mmTopPad + 2] });
+        doc.addImage(imgData, 'PNG', mmLeftPad, mmTopPad, mmContentW, mmContentH);
 
-        // Blob/File del PDF
         const pdfBlob = doc.output('blob');
         const pdfFile = new File([pdfBlob], 'ticket_58mm.pdf', { type: 'application/pdf' });
 
@@ -267,7 +266,6 @@
             text: 'Imprimir en Epson TM Print Assistant'
           });
         } else {
-          // Fallback: descarga para abrir manualmente con Epson
           const url = URL.createObjectURL(pdfBlob);
           const a = document.createElement('a');
           a.href = url;
@@ -276,7 +274,7 @@
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
-          alert('Se guardó "ticket_58mm.pdf". Ábrelo con Epson TM Print Assistant. Asegúrate de Paper size=58 mm y sin "Fit to page".');
+          alert('Se guardó "ticket_58mm.pdf". Ábrelo con Epson TM Print Assistant (Paper size = 58 mm, sin “Fit to page”).');
         }
       } catch (e) {
         console.error(e);
