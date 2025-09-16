@@ -6,16 +6,13 @@
   <title>Ticket 58mm</title>
   <style>
     :root{
-      /* Papel 58mm, usamos 48mm de área útil para calidad */
       --paper: 58mm;
       --w: 48mm;
 
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-
-      /* Tamaños legibles en térmica */
-      --fs: 3.2mm;        /* base */
-      --fs-head: 4.6mm;   /* título */
-      --fs-sub: 2.9mm;    /* detalles */
+      --fs: 3.2mm;
+      --fs-head: 4.6mm;
+      --fs-sub: 2.9mm;
       --line: #000;
     }
 
@@ -29,7 +26,7 @@
     #ticket{
       width: var(--w);
       max-width: var(--w);
-      padding: 2mm 1.5mm 2mm;   /* margen interno */
+      padding: 2mm 1.5mm 2mm;
       margin: 0 auto;
     }
 
@@ -47,25 +44,23 @@
       padding: 0 0 .8mm 0;
     }
 
-    /* 👉 Más separación entre QTY y DESCRIPCIÓN */
     .qty-col{ width: 7mm; text-align: left; padding-right: .6mm; }
-    .desc-col{ width: calc(100% - 7mm - 14mm); padding-left: 1.6mm; } /* empuja todo a la derecha */
+    .desc-col{ width: calc(100% - 7mm - 14mm); padding-left: 0.2mm; } /* 👉 más a la izquierda */
     .total-col{ width: 14mm; text-align: right; }
 
     td{ vertical-align: top; padding-top: 1.0mm; font-size: var(--fs-sub); line-height:1.25; word-wrap: break-word; }
     .line-row{ border-bottom: 0.3mm dashed #000; }
     .line-row:last-child{ border-bottom: none; }
 
-    /* 👉 Descripción más a la derecha (indent) */
     .item-name{ display:block; font-size: var(--fs); font-weight:700; }
     .meta-line{
       display:flex; justify-content: space-between; align-items: baseline; margin-top: .2mm;
     }
     .unit-price{ font-weight:700; }
 
-    /* 👉 UPC más grande y en negrita */
+    /* 👉 Solo número, grande y negrita */
     .upc-inline{
-      font-size: var(--fs);   /* más grande que subtexto */
+      font-size: var(--fs);
       font-weight:800;
       color:#000;
       margin-left: 2mm;
@@ -81,7 +76,6 @@
     /* Pie */
     .footer{ text-align:center; margin-top: 2mm; font-weight:700; font-size: var(--fs-sub); }
 
-    /* Impresión navegador */
     @media print{
       #uiBtns{ display:none !important; }
       @page{ size: var(--paper) auto; margin: 0; }
@@ -101,7 +95,6 @@
 </head>
 <body>
   <div id="ticket">
-    <!-- Encabezado empresa -->
     <div class="store-header">
       <div class="store-title">MD MAGUEY DISTRIBUTOR</div>
       <div class="store-details">
@@ -112,7 +105,6 @@
 
     <div class="divider"></div>
 
-    <!-- Datos cabecera -->
     <div>
       <div><b>Fecha:</b> <span id="fecha_text"></span></div>
       <div><b>Factura No.:</b> <span id="factura_text"></span></div>
@@ -122,7 +114,6 @@
 
     <div class="divider"></div>
 
-    <!-- Tabla -->
     <table>
       <thead>
         <tr>
@@ -134,7 +125,6 @@
       <tbody id="tbody"></tbody>
     </table>
 
-    <!-- Totales -->
     <div class="totals">
       <div class="total-line">
         <span>Total Unidades</span>
@@ -153,28 +143,20 @@
     </div>
   </div>
 
-  <!-- Botones -->
   <div id="uiBtns">
     <button id="printBtn" class="btn">Imprimir</button>
     <button id="epsonBtn" class="btn btn-green">Enviar a Epson</button>
   </div>
 
-  <!-- Librerías -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
-    /* ========= Utilidades ========= */
     const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
     const splitAny = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
-    const num = s => {
-      if (s == null) return 0;
-      const n = parseFloat(String(s).replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,""));
-      return isNaN(n) ? 0 : n;
-    };
+    const num = s => { if (s == null) return 0; const n = parseFloat(String(s).replace(/\s+/g,"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-    /* ========= Leer parámetros ========= */
     const q = new URLSearchParams(location.search);
     const boleta    = q.get("boleta")    || "";
     const mesa      = q.get("mesa")      || "";
@@ -182,20 +164,17 @@
     const fecha     = q.get("fecha")     || new Date().toLocaleDateString();
     const estado    = q.get("estado")    || "";
 
-    // Listas
     let cantidades    = splitAny(q.get("cantidades"));
     let descripciones = splitAny(q.get("servicios"));
     let upcs          = splitAny(q.get("upcs"));
     let p_units       = splitAny(q.get("p_unit"));
 
-    /* ========= Header ========= */
     setText("fecha_text", fecha);
     setText("factura_text", boleta || "-");
     if(mesa){ document.getElementById("cliente_wrap").style.display = "block"; setText("cliente_text", mesa); }
     if(direccion){ document.getElementById("dir_wrap").style.display = "block"; setText("dir_text", direccion); }
     setText("estado_text", estado);
 
-    /* ========= Filas ========= */
     const tbody = document.getElementById("tbody");
     let units = 0, grand = 0;
     const n = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
@@ -218,7 +197,7 @@
           <span class="item-name">${name}</span>
           <div class="meta-line">
             <span class="unit-price">$${fmt(unit)}</span>
-            ${upc ? `<span class="upc-inline">UPC: ${upc}</span>` : ``}
+            ${upc ? `<span class="upc-inline">${upc}</span>` : ``}
           </div>
         </td>
         <td class="total-col">$${fmt(line)}</td>
@@ -229,57 +208,28 @@
     setText("units", units);
     setText("grand", "$" + fmt(grand));
 
-    /* ========= Imprimir navegador ========= */
     document.getElementById("printBtn").onclick = () => window.print();
 
-    /* ========= Enviar a Epson: máxima calidad ========= */
     document.getElementById("epsonBtn").onclick = async () => {
       try {
         const ticket = document.getElementById('ticket');
-
-        // Escala alta para nitidez en térmica
-        const canvas = await html2canvas(ticket, {
-          scale: 3,                 // ↑ antes 2
-          backgroundColor: '#ffffff',
-          useCORS: true
-        });
-        const imgData = canvas.toDataURL('image/png'); // PNG = sin compresión
-
-        // Papel 58mm, contenido centrado 48mm
-        const mmPaperW   = 58;
-        const mmContentW = 48;
+        const canvas = await html2canvas(ticket, { scale: 3, backgroundColor: '#fff', useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+        const mmPaperW=58, mmContentW=48;
         const mmContentH = mmContentW * (canvas.height / canvas.width);
-        const mmTopPad   = 3;                              // margen superior
-        const mmLeftPad  = (mmPaperW - mmContentW) / 2;    // centrar
-
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH + mmTopPad + 2] });
-        doc.addImage(imgData, 'PNG', mmLeftPad, mmTopPad, mmContentW, mmContentH);
-
+        const doc = new jsPDF({ unit:'mm', format:[mmPaperW, mmContentH+5] });
+        doc.addImage(imgData, 'PNG', (mmPaperW-mmContentW)/2, 3, mmContentW, mmContentH);
         const pdfBlob = doc.output('blob');
-        const pdfFile = new File([pdfBlob], 'ticket_58mm.pdf', { type: 'application/pdf' });
-
-        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-          await navigator.share({
-            files: [pdfFile],
-            title: 'Ticket 58mm',
-            text: 'Imprimir en Epson TM Print Assistant'
-          });
+        const pdfFile = new File([pdfBlob], 'ticket_58mm.pdf', { type:'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files:[pdfFile] })) {
+          await navigator.share({ files:[pdfFile], title:'Ticket 58mm', text:'Imprimir en Epson TM Print Assistant' });
         } else {
           const url = URL.createObjectURL(pdfBlob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'ticket_58mm.pdf';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
+          const a=document.createElement('a'); a.href=url; a.download='ticket_58mm.pdf'; a.click();
           URL.revokeObjectURL(url);
-          alert('Se guardó "ticket_58mm.pdf". Ábrelo con Epson TM Print Assistant (Paper size = 58 mm, sin “Fit to page”).');
         }
-      } catch (e) {
-        console.error(e);
-        alert('No pude generar/enviar el PDF 58mm: ' + e.message);
-      }
+      } catch (e) { alert('Error: '+e.message); }
     };
   </script>
 </body>
