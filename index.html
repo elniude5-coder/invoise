@@ -8,8 +8,8 @@
     :root{
       --paper: 58mm;
       --w: 48mm;
+      --font: "Courier New", monospace;
 
-      --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       --fs: 3.2mm;
       --fs-head: 4.6mm;
       --fs-sub: 2.9mm;
@@ -32,7 +32,7 @@
 
     /* Encabezado */
     .store-header{ text-align:center; margin-bottom: 2mm; }
-    .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; letter-spacing: .2mm; text-transform: uppercase; }
+    .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; text-transform: uppercase; }
     .store-details{ font-size: var(--fs-sub); line-height:1.25; margin-top: .6mm; }
     .divider{ border-top: .3mm dashed var(--line); margin: 2mm 0; }
 
@@ -44,28 +44,21 @@
       padding: 0 0 .8mm 0;
     }
 
-    .qty-col{ width: 7mm; text-align: left; padding-right: .6mm; }
-    .desc-col{ width: calc(100% - 7mm - 14mm); padding-left: 0.2mm; } /* 👉 más a la izquierda */
-    .total-col{ width: 14mm; text-align: right; }
+    .qty-col{ width: 4.8mm; text-align: right; padding-right: .4mm; }
+    .desc-col{ width: calc(100% - 4.8mm - 13mm); padding-left: 0; }
+    .total-col{ width: 13mm; text-align: right; }
 
-    td{ vertical-align: top; padding-top: 1.0mm; font-size: var(--fs-sub); line-height:1.25; word-wrap: break-word; }
+    /* 👉 mover SOLO la palabra "DESCRIPCIÓN" más a la derecha */
+    thead .desc-col{ padding-left: 2mm; }
+
+    td{ vertical-align: top; padding-top: .6mm; padding-left: 0; font-size: var(--fs-sub); line-height:1.25; word-wrap: break-word; }
     .line-row{ border-bottom: 0.3mm dashed #000; }
     .line-row:last-child{ border-bottom: none; }
 
-    .item-name{ display:block; font-size: var(--fs); font-weight:700; }
-    .meta-line{
-      display:flex; justify-content: space-between; align-items: baseline; margin-top: .2mm;
-    }
+    .item-name{ display:block; font-size: var(--fs); font-weight:700; margin-left: -1.2mm; }
+    .meta-line{ display:flex; justify-content: space-between; margin-top: .2mm; margin-left: -1.2mm; }
     .unit-price{ font-weight:700; }
-
-    /* 👉 Solo número, grande y negrita */
-    .upc-inline{
-      font-size: var(--fs);
-      font-weight:800;
-      color:#000;
-      margin-left: 2mm;
-      white-space: nowrap;
-    }
+    .upc-inline{ font-size: var(--fs); font-weight:800; color:#000; margin-left: 2mm; white-space: nowrap; }
 
     /* Totales */
     .totals{ margin-top: 2mm; font-size: var(--fs); }
@@ -82,14 +75,8 @@
     }
 
     /* Botonera */
-    #uiBtns{
-      position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999;
-      flex-direction: column;
-    }
-    .btn{
-      padding:6px 10px; border-radius:6px; border:1px solid #000; background:#fff; color:#000; cursor:pointer;
-      font-family: var(--font); font-size: 12px;
-    }
+    #uiBtns{ position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; flex-direction: column; }
+    .btn{ padding:6px 10px; border-radius:6px; border:1px solid #000; background:#fff; color:#000; cursor:pointer; font-family: var(--font); font-size: 12px; }
     .btn-green{ border-color:#0a0; color:#0a0; background:#eaffea; }
   </style>
 </head>
@@ -126,21 +113,12 @@
     </table>
 
     <div class="totals">
-      <div class="total-line">
-        <span>Total Unidades</span>
-        <span id="units">0</span>
-      </div>
-      <div class="total-line bold">
-        <span>TOTAL A PAGAR</span>
-        <span id="grand">$0.00</span>
-      </div>
+      <div class="total-line"><span>Total Unidades</span><span id="units">0</span></div>
+      <div class="total-line bold"><span>TOTAL A PAGAR</span><span id="grand">$0.00</span></div>
     </div>
 
     <div class="divider"></div>
-    <div class="footer">
-      ¡Gracias por su compra!<br>
-      <span id="estado_text"></span>
-    </div>
+    <div class="footer">¡Gracias por su compra!<br><span id="estado_text"></span></div>
   </div>
 
   <div id="uiBtns">
@@ -150,87 +128,54 @@
 
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-
   <script>
-    const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
-    const splitAny = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
-    const num = s => { if (s == null) return 0; const n = parseFloat(String(s).replace(/\s+/g,"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
-    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const fmt = v => Number(v||0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+    const splitAny = s => String(s||"").split(/[;,]/).map(x=>x.trim()).filter(x=>x!=="");
+    const num = s => {if(s==null)return 0;const n=parseFloat(String(s).replace(/\s+/g,"").replace(/[^0-9.\-]/g,""));return isNaN(n)?0:n;}
+    const setText=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;}
 
-    const q = new URLSearchParams(location.search);
-    const boleta    = q.get("boleta")    || "";
-    const mesa      = q.get("mesa")      || "";
-    const direccion = q.get("direccion") || "";
-    const fecha     = q.get("fecha")     || new Date().toLocaleDateString();
-    const estado    = q.get("estado")    || "";
+    const q=new URLSearchParams(location.search);
+    const boleta=q.get("boleta")||""; const mesa=q.get("mesa")||""; const direccion=q.get("direccion")||"";
+    const fecha=q.get("fecha")||new Date().toLocaleDateString(); const estado=q.get("estado")||"";
+    let cantidades=splitAny(q.get("cantidades")), descripciones=splitAny(q.get("servicios"));
+    let upcs=splitAny(q.get("upcs")), p_units=splitAny(q.get("p_unit"));
 
-    let cantidades    = splitAny(q.get("cantidades"));
-    let descripciones = splitAny(q.get("servicios"));
-    let upcs          = splitAny(q.get("upcs"));
-    let p_units       = splitAny(q.get("p_unit"));
+    setText("fecha_text",fecha); setText("factura_text",boleta||"-");
+    if(mesa){document.getElementById("cliente_wrap").style.display="block";setText("cliente_text",mesa);}
+    if(direccion){document.getElementById("dir_wrap").style.display="block";setText("dir_text",direccion);}
+    setText("estado_text",estado);
 
-    setText("fecha_text", fecha);
-    setText("factura_text", boleta || "-");
-    if(mesa){ document.getElementById("cliente_wrap").style.display = "block"; setText("cliente_text", mesa); }
-    if(direccion){ document.getElementById("dir_wrap").style.display = "block"; setText("dir_text", direccion); }
-    setText("estado_text", estado);
-
-    const tbody = document.getElementById("tbody");
-    let units = 0, grand = 0;
-    const n = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
-
-    for (let i=0; i<n; i++){
-      const qty   = num(cantidades[i]);
-      const name  = descripciones[i] || "";
-      const unit  = num(p_units[i]);
-      const upc   = upcs[i] || "";
-      const line  = qty * unit;
-
-      units += qty;
-      grand += line;
-
-      const tr = document.createElement("tr");
-      tr.className = "line-row";
-      tr.innerHTML = `
-        <td class="qty-col">${qty || ""}</td>
+    const tbody=document.getElementById("tbody"); let units=0,grand=0;
+    const n=Math.max(descripciones.length,p_units.length,cantidades.length,upcs.length);
+    for(let i=0;i<n;i++){const qty=num(cantidades[i]);const name=descripciones[i]||"";const unit=num(p_units[i]);const code=upcs[i]||"";const line=qty*unit;
+      units+=qty;grand+=line;
+      const tr=document.createElement("tr");
+      tr.className="line-row";
+      tr.innerHTML=`<td class="qty-col">${qty||""}</td>
         <td class="desc-col">
           <span class="item-name">${name}</span>
           <div class="meta-line">
             <span class="unit-price">$${fmt(unit)}</span>
-            ${upc ? `<span class="upc-inline">${upc}</span>` : ``}
+            ${code?`<span class="upc-inline">${code}</span>`:""}
           </div>
         </td>
-        <td class="total-col">$${fmt(line)}</td>
-      `;
-      tbody.appendChild(tr);
+        <td class="total-col">$${fmt(line)}</td>`;
+      tbody.appendChild(tr);}
+    setText("units",units); setText("grand","$"+fmt(grand));
+
+    document.getElementById("printBtn").onclick=()=>window.print();
+    document.getElementById("epsonBtn").onclick=async()=>{
+      const ticket=document.getElementById('ticket');
+      const canvas=await html2canvas(ticket,{scale:3,backgroundColor:'#fff'});
+      const imgData=canvas.toDataURL('image/png');
+      const mmPaperW=58,mmContentW=48,mmContentH=mmContentW*(canvas.height/canvas.width);
+      const {jsPDF}=window.jspdf;
+      const doc=new jsPDF({unit:'mm',format:[mmPaperW,mmContentH+5]});
+      doc.addImage(imgData,'PNG',(mmPaperW-mmContentW)/2,3,mmContentW,mmContentH);
+      const pdfBlob=doc.output('blob');const pdfFile=new File([pdfBlob],'ticket_58mm.pdf',{type:'application/pdf'});
+      if(navigator.canShare&&navigator.canShare({files:[pdfFile]})){await navigator.share({files:[pdfFile],title:'Ticket 58mm',text:'Imprimir en Epson TM Print Assistant'});}
+      else{const url=URL.createObjectURL(pdfBlob);const a=document.createElement('a');a.href=url;a.download='ticket_58mm.pdf';a.click();URL.revokeObjectURL(url);}
     }
-
-    setText("units", units);
-    setText("grand", "$" + fmt(grand));
-
-    document.getElementById("printBtn").onclick = () => window.print();
-
-    document.getElementById("epsonBtn").onclick = async () => {
-      try {
-        const ticket = document.getElementById('ticket');
-        const canvas = await html2canvas(ticket, { scale: 3, backgroundColor: '#fff', useCORS: true });
-        const imgData = canvas.toDataURL('image/png');
-        const mmPaperW=58, mmContentW=48;
-        const mmContentH = mmContentW * (canvas.height / canvas.width);
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ unit:'mm', format:[mmPaperW, mmContentH+5] });
-        doc.addImage(imgData, 'PNG', (mmPaperW-mmContentW)/2, 3, mmContentW, mmContentH);
-        const pdfBlob = doc.output('blob');
-        const pdfFile = new File([pdfBlob], 'ticket_58mm.pdf', { type:'application/pdf' });
-        if (navigator.canShare && navigator.canShare({ files:[pdfFile] })) {
-          await navigator.share({ files:[pdfFile], title:'Ticket 58mm', text:'Imprimir en Epson TM Print Assistant' });
-        } else {
-          const url = URL.createObjectURL(pdfBlob);
-          const a=document.createElement('a'); a.href=url; a.download='ticket_58mm.pdf'; a.click();
-          URL.revokeObjectURL(url);
-        }
-      } catch (e) { alert('Error: '+e.message); }
-    };
   </script>
 </body>
 </html>
