@@ -10,9 +10,9 @@
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
       /* Tamaños ajustados para mayor legibilidad en térmica */
-      --fs: 3.2mm;        /* texto base (antes 2.8mm) */
-      --fs-head: 4.6mm;   /* título (antes 4.0mm) */
-      --fs-sub: 2.9mm;    /* celdas pequeñas (antes 2.6mm) */
+      --fs: 3.2mm;        /* texto base */
+      --fs-head: 4.6mm;   /* título */
+      --fs-sub: 2.9mm;    /* celdas pequeñas */
       --line: #000;
     }
     *{ box-sizing: border-box; }
@@ -44,16 +44,30 @@
     }
     td{ vertical-align: top; padding-top: 1.0mm; font-size: var(--fs-sub); line-height:1.25; word-wrap: break-word; }
 
-    .qty-col{ width: 9mm; text-align: right; padding-right: 1mm; }
-    .desc-col{ width: calc(100% - 9mm - 14mm); }
+    /* 👉 Cantidad más a la izquierda y más angosta */
+    .qty-col{ width: 6mm; text-align: left; padding-right: .6mm; }
+    .desc-col{ width: calc(100% - 6mm - 14mm); }
     .total-col{ width: 14mm; text-align: right; }
 
     .line-row{ border-bottom: 0.3mm dashed #000; }
     .line-row:last-child{ border-bottom: none; }
 
-    .item-name{ display:block; font-size: var(--fs); font-weight:700; }  /* ahora siempre negrita */
-    .unit-price{ display:block; font-weight:700; margin-top: .2mm; }
-    .upc{ display:block; margin-top: .2mm; font-size: var(--fs-sub); }
+    .item-name{ display:block; font-size: var(--fs); font-weight:700; }
+
+    /* 👉 Precio y UPC en la MISMA línea */
+    .meta-line{
+      display:flex; justify-content: space-between; align-items: baseline; margin-top: .2mm;
+    }
+    .unit-price{ font-weight:700; }
+
+    /* 👉 UPC más grande y en negro/negra */
+    .upc-inline{
+      font-size: var(--fs);         /* un poco más grande que el subtexto */
+      font-weight:800;              /* más “grueso” */
+      color:#000;                   /* fuerza negro */
+      margin-left: 2mm;
+      white-space: nowrap;          /* evita saltos feos si cabe */
+    }
 
     /* Totales */
     .totals{ margin-top: 2mm; font-size: var(--fs); }
@@ -168,7 +182,7 @@
     /* ========= Leer parámetros ========= */
     const q = new URLSearchParams(location.search);
     const boleta    = q.get("boleta")    || "";
-    const mesa      = q.get("mesa")      || "";   // <-- corregido
+    const mesa      = q.get("mesa")      || "";
     const direccion = q.get("direccion") || "";
     const fecha     = q.get("fecha")     || new Date().toLocaleDateString();
     const estado    = q.get("estado")    || "";
@@ -207,8 +221,10 @@
         <td class="qty-col">${qty || ""}</td>
         <td class="desc-col">
           <span class="item-name">${name}</span>
-          <span class="unit-price">$${fmt(unit)}</span>
-          <span class="upc">UPC: ${upc}</span>
+          <div class="meta-line">
+            <span class="unit-price">$${fmt(unit)}</span>
+            ${upc ? `<span class="upc-inline">UPC: ${upc}</span>` : ``}
+          </div>
         </td>
         <td class="total-col">$${fmt(line)}</td>
       `;
