@@ -11,8 +11,8 @@
 
       /* Tamaños ajustados para mayor legibilidad en térmica */
       --fs: 3.2mm;        /* texto base (antes 2.8mm) */
-      --fs-head: 4.6mm;   /* título empresa (antes 4.0mm) */
-      --fs-sub: 2.9mm;    /* celdas/UPCs (antes 2.6mm) */
+      --fs-head: 4.6mm;   /* título (antes 4.0mm) */
+      --fs-sub: 2.9mm;    /* celdas pequeñas (antes 2.6mm) */
       --line: #000;
     }
     *{ box-sizing: border-box; }
@@ -36,13 +36,13 @@
     .divider{ border-top: .3mm dashed var(--line); margin: 2mm 0; }
 
     /* Tabla */
-    table{ width:100%; border-collapse: collapse; margin-top: 1mm; }
+    table{ width:100%; border-collapse: collapse; margin-top: 1mm; table-layout: fixed; }
     thead th{
       text-align:left; font-weight:700; font-size: var(--fs);
       border-bottom: 0.3mm solid var(--line);
       padding: 0 0 .8mm 0;
     }
-    td{ vertical-align: top; padding-top: 1.0mm; font-size: var(--fs-sub); }
+    td{ vertical-align: top; padding-top: 1.0mm; font-size: var(--fs-sub); line-height:1.25; word-wrap: break-word; }
 
     .qty-col{ width: 9mm; text-align: right; padding-right: 1mm; }
     .desc-col{ width: calc(100% - 9mm - 14mm); }
@@ -59,8 +59,7 @@
     .totals{ margin-top: 2mm; font-size: var(--fs); }
     .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; }
     .bold{ font-weight:700; }
-    /* Agrandar la cifra del TOTAL A PAGAR sin romper layout */
-    .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1mm); font-weight:800; }
+    .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1mm); font-weight:800; } /* TOTAL A PAGAR más grande */
 
     /* Pie */
     .footer{ text-align:center; margin-top: 2mm; font-weight:700; font-size: var(--fs-sub); }
@@ -169,7 +168,7 @@
     /* ========= Leer parámetros ========= */
     const q = new URLSearchParams(location.search);
     const boleta    = q.get("boleta")    || "";
-    the mesa      = q.get("mesa")      || "";
+    const mesa      = q.get("mesa")      || "";   // <-- corregido
     const direccion = q.get("direccion") || "";
     const fecha     = q.get("fecha")     || new Date().toLocaleDateString();
     const estado    = q.get("estado")    || "";
