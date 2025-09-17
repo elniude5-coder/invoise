@@ -48,13 +48,15 @@
 
     /* Columnas */
     .qty-col{
-      width: 6mm;               /* 👉 más ancha que antes para que respire */
+      width: 8mm;               /* 👉 más espacio reservado para la cantidad */
       text-align: right;
-      padding-right: 1.2mm;     /* 👉 separa la cantidad del producto */
+      padding-right: 2mm;       /* 👉 más separación respecto a la descripción */
+      font-weight: 700;         /* 👉 negrita en QTY */
+      font-size: calc(var(--fs) + 0.6mm); /* 👉 un poco más grande que el base */
     }
     .desc-col{
-      width: calc(100% - 6mm - 13mm);
-      padding-left: 0;          /* productos pegados a la izquierda */
+      width: calc(100% - 8mm - 13mm);  /* se ajusta al nuevo ancho de QTY */
+      padding-left: 0;                  /* productos pegados a la izquierda */
     }
     .total-col{
       width: 13mm;
@@ -173,7 +175,6 @@
   <!-- Botones -->
   <div id="uiBtns">
     <button id="printBtn" class="btn">Imprimir</button>
-    <button id="demoBtn" class="btn">Demo (llenar ejemplo)</button>
     <button id="epsonBtn" class="btn btn-green">Enviar a Epson</button>
   </div>
 
@@ -190,11 +191,11 @@
 
     /* ========= Parámetros ========= */
     const q = new URLSearchParams(location.search);
-    let boleta    = q.get("boleta")    || "";
-    let mesa      = q.get("mesa")      || "";
-    let direccion = q.get("direccion") || "";
-    let fecha     = q.get("fecha")     || new Date().toLocaleDateString();
-    let estado    = q.get("estado")    || "";
+    const boleta    = q.get("boleta")    || "";
+    const mesa      = q.get("mesa")      || "";
+    const direccion = q.get("direccion") || "";
+    const fecha     = q.get("fecha")     || new Date().toLocaleDateString();
+    const estado    = q.get("estado")    || "";
 
     let cantidades    = splitAny(q.get("cantidades"));
     let descripciones = splitAny(q.get("servicios"));
@@ -202,7 +203,7 @@
     let p_units       = splitAny(q.get("p_unit"));
 
     /* ========= Render ========= */
-    function render() {
+    (() => {
       setText("fecha_text", fecha);
       setText("factura_text", boleta || "-");
       if (mesa) { document.getElementById("cliente_wrap").style.display = "block"; setText("cliente_text", mesa); }
@@ -210,8 +211,6 @@
       setText("estado_text", estado);
 
       const tbody = document.getElementById("tbody");
-      tbody.innerHTML = "";
-
       let units = 0, grand = 0;
       const n = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
 
@@ -242,38 +241,10 @@
 
       setText("units", units);
       setText("grand", "$" + fmt(grand));
-    }
-
-    /* ========= Demo automático si no hay items ========= */
-    function loadDemoIfEmpty() {
-      const empty = !cantidades.length && !descripciones.length && !upcs.length && !p_units.length;
-      if (!empty) return;
-      // Datos de ejemplo
-      boleta = "F-000123";
-      mesa = "Food Universal";
-      direccion = "498 e 31 st";
-      fecha = new Date().toLocaleDateString();
-      estado = "Pagado";
-      cantidades = ["1","1","1"];
-      descripciones = ["Tamarindo dulce 8 oz","Dulce crema de leche 4oz","Dulce coco leche"];
-      upcs = ["723849488173","705105086958","705105087054"];
-      p_units = ["2.50","1.50","1.50"];
-    }
-
-    loadDemoIfEmpty();
-    render();
+    })();
 
     /* ========= Botones ========= */
     document.getElementById("printBtn").onclick = () => window.print();
-
-    // Demo manual
-    document.getElementById("demoBtn").onclick = () => {
-      cantidades = ["1","1","1"];
-      descripciones = ["Tamarindo dulce 8 oz","Dulce crema de leche 4oz","Dulce coco leche"];
-      upcs = ["723849488173","705105086958","705105087054"];
-      p_units = ["2.50","1.50","1.50"];
-      render();
-    };
 
     // Enviar a Epson (máxima nitidez)
     document.getElementById("epsonBtn").onclick = async () => {
