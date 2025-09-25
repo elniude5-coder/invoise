@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=58mm, initial-scale=1.0" />
+  <title>Ticket 58mm</title>
+  <style>
+    :root{
+      /* Papel y ancho útil */
+      --paper: 58mm;
+      --w: 48mm;
+
+      /* Tipos y tamaños */
+      --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --fs: 3.2mm;       /* base */
+      --fs-head: 4.6mm;  /* título */
+      --fs-sub: 2.9mm;   /* detalles */
+      --line: #000;
+    }
+
+    *{ box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    html, body{
+      margin:0; padding:0; background:#fff; color:#000;
+      font-family:var(--font);
+      font-size:var(--fs);
+      width: var(--paper);
+    }
+    #ticket{
+      width: var(--w);
+      max-width: var(--w);
+      padding: 2mm 1.5mm 2mm;
+      margin: 0 auto;
+    }
+
+    /* Encabezado negocio */
+    .store-header{ text-align:center; margin-bottom: 2mm; }
+    .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; text-transform: uppercase; letter-spacing:.2mm; }
+    .store-details{ font-size: var(--fs-sub); line-height:1.25; margin-top:.6mm; }
+    .divider{ border-top:.3mm dashed var(--line); margin: 2mm 0; }
+
+    /* Tabla */
+    table{ width:100%; border-collapse: collapse; table-layout: fixed; margin-top:1mm; }
+    thead th{
+      text-align:left; font-weight:700; font-size: var(--fs);
+      border-bottom: .3mm solid var(--line);
+      padding: 0 0 .8mm 0;
+    }
+
+    /* Columnas */
+    .qty-col{
+      width: 8mm;               /* 👉 más espacio reservado para la cantidad */
+      text-align: right;
+      padding-right: 2mm;       /* 👉 más separación respecto a la descripción */
+      font-weight: 700;         /* 👉 negrita en QTY */
+      font-size: calc(var(--fs) + 0.6mm); /* 👉 un poco más grande que el base */
+    }
+    .desc-col{
+      width: calc(100% - 8mm - 13mm);  /* se ajusta al nuevo ancho de QTY */
+      padding-left: 0;                  /* productos pegados a la izquierda */
+    }
+    .total-col{
+      width: 13mm;
+      text-align: right;
+    }
+
+    /* 👉 mover SOLO el encabezado "DESCRIPCIÓN" a la derecha */
+    thead .desc-col{ padding-left: 2.5mm; }
+
+    td{
+      vertical-align: top;
+      padding-top: .6mm;
+      padding-left: 0;
+      font-size: var(--fs-sub);
+      line-height: 1.25;
+      word-wrap: break-word;
+    }
+    .line-row{ border-bottom:.3mm dashed #000; }
+    .line-row:last-child{ border-bottom: none; }
+
+    /* Filas: nombre + meta (precio / código) */
+    .item-name{
+      display:block;
+      font-size: var(--fs);
+      font-weight: 700;
+      margin-left: -1.2mm;      /* 👉 solo filas: más a la izquierda */
+    }
+    .meta-line{
+      display:flex; justify-content: space-between; align-items: baseline;
+      margin-top:.2mm;
+      margin-left:-1.2mm;       /* alinea con el nombre */
+    }
+    .unit-price{ font-weight:700; }
+    .upc-inline{
+      font-size: var(--fs);     /* grande */
+      font-weight: 800;         /* negrita fuerte */
+      color:#000;
+      margin-left: 2mm;
+      white-space: nowrap;
+    }
+
+    /* Totales */
+    .totals{ margin-top: 2mm; font-size: var(--fs); }
+    .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; }
+    .bold{ font-weight:700; }
+    .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1mm); font-weight:800; }
+
+    /* Pie */
+    .footer{ text-align:center; margin-top: 2mm; font-weight:700; font-size: var(--fs-sub); }
+
+    /* Print */
+    @media print{
+      #uiBtns{ display:none !important; }
+      @page{ size: var(--paper) auto; margin: 0; }
+    }
+
+    /* Botonera */
+    #uiBtns{
+      position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999; flex-direction: column;
+    }
+    .btn{
+      padding:6px 10px; border-radius:6px; border:1px solid #000; background:#fff; color:#000; cursor:pointer;
+      font-family: var(--font); font-size: 12px;
+    }
+    .btn-green{ border-color:#0a0; color:#0a0; background:#eaffea; }
+  </style>
+</head>
+<body>
+  <div id="ticket">
+    <!-- Encabezado empresa -->
+    <div class="store-header">
+      <div class="store-title">MD MAGUEY DISTRIBUTOR</div>
+      <div class="store-details">
+        250 ROBINSON AVE #2 · BRONX NY 10465<br>
+        Tel: 347-589-2676
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Datos cabecera -->
+    <div>
+      <div><b>Fecha:</b> <span id="fecha_text"></span></div>
+      <div><b>Factura No.:</b> <span id="factura_text"></span></div>
+      <div id="cliente_wrap" style="display:none;"><b>Cliente:</b> <span id="cliente_text"></span></div>
+      <div id="dir_wrap" style="display:none;"><b>Dirección:</b> <span id="dir_text"></span></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Tabla -->
+    <table>
+      <thead>
+        <tr>
+          <th class="qty-col">QTY</th>
+          <th class="desc-col">DESCRIPCIÓN</th>
+          <th class="total-col">TOTAL</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <!-- Totales -->
+    <div class="totals">
+      <div class="total-line"><span>Total Unidades</span><span id="units">0</span></div>
+      <div class="total-line bold"><span>TOTAL A PAGAR</span><span id="grand">$0.00</span></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="footer">
+      ¡Gracias por su compra!<br>
+      <span id="estado_text"></span>
+    </div>
+  </div>
+
+  <!-- Botones -->
+  <div id="uiBtns">
+    <button id="printBtn" class="btn">Imprimir</button>
+    <button id="epsonBtn" class="btn btn-green">Enviar a Epson</button>
+  </div>
+
+  <!-- Librerías -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script>
+    /* ========= Utilidades ========= */
+    const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+    const splitAny = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
+    const num = s => { if (s == null) return 0; const n = parseFloat(String(s).replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    /* ========= Parámetros ========= */
+    const q = new URLSearchParams(location.search);
+    const boleta    = q.get("boleta")    || "";
+    const mesa      = q.get("mesa")      || "";
+    const direccion = q.get("direccion") || "";
+    const fecha     = q.get("fecha")     || new Date().toLocaleDateString();
+    const estado    = q.get("estado")    || "";
+
+    let cantidades    = splitAny(q.get("cantidades"));
+    let descripciones = splitAny(q.get("servicios"));
+    let upcs          = splitAny(q.get("upcs"));
+    let p_units       = splitAny(q.get("p_unit"));
+
+    /* ========= Render ========= */
+    (() => {
+      setText("fecha_text", fecha);
+      setText("factura_text", boleta || "-");
+      if (mesa) { document.getElementById("cliente_wrap").style.display = "block"; setText("cliente_text", mesa); }
+      if (direccion) { document.getElementById("dir_wrap").style.display = "block"; setText("dir_text", direccion); }
+      setText("estado_text", estado);
+
+      const tbody = document.getElementById("tbody");
+      let units = 0, grand = 0;
+      const n = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
+
+      for (let i=0; i<n; i++){
+        const qty  = num(cantidades[i]);
+        const name = descripciones[i] || "";
+        const unit = num(p_units[i]);
+        const code = upcs[i] || "";
+        const line = qty * unit;
+
+        units += qty; grand += line;
+
+        const tr = document.createElement("tr");
+        tr.className = "line-row";
+        tr.innerHTML = `
+          <td class="qty-col">${qty || ""}</td>
+          <td class="desc-col">
+            <span class="item-name">${name}</span>
+            <div class="meta-line">
+              <span class="unit-price">$${fmt(unit)}</span>
+              ${code ? `<span class="upc-inline">${code}</span>` : ``}
+            </div>
+          </td>
+          <td class="total-col">$${fmt(line)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      setText("units", units);
+      setText("grand", "$" + fmt(grand));
+    })();
+
+    /* ========= Botones ========= */
+    document.getElementById("printBtn").onclick = () => window.print();
+
+    // Enviar a Epson (máxima nitidez)
+    document.getElementById("epsonBtn").onclick = async () => {
+      try {
+        const ticket = document.getElementById('ticket');
+        const canvas = await html2canvas(ticket, { scale: 3, backgroundColor: '#ffffff', useCORS: true });
+        const imgData = canvas.toDataURL('image/png');
+
+        const mmPaperW = 58, mmContentW = 48;
+        const mmContentH = mmContentW * (canvas.height / canvas.width);
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH + 5] });
+        doc.addImage(imgData, 'PNG', (mmPaperW - mmContentW) / 2, 3, mmContentW, mmContentH);
+
+        const pdfBlob = doc.output('blob');
+        const pdfFile = new File([pdfBlob], 'ticket_58mm.pdf', { type: 'application/pdf' });
+
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+          await navigator.share({ files: [pdfFile], title: 'Ticket 58mm', text: 'Imprimir en Epson TM Print Assistant' });
+        } else {
+          const url = URL.createObjectURL(pdfBlob);
+          const a = document.createElement('a');
+          a.href = url; a.download = 'ticket_58mm.pdf'; a.click();
+          URL.revokeObjectURL(url);
+        }
+      } catch (e) {
+        alert('Error al generar/enviar el PDF: ' + e.message);
+      }
+    };
+  </script>
+</body>
+</html>
