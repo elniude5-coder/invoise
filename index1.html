@@ -2,19 +2,19 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=58mm, initial-scale=1.0" />
-  <title>Ticket 58mm</title>
+  <meta name="viewport" content="width=80mm, initial-scale=1.0" />
+  <title>Ticket 80mm · Brother RJ-3050Ai</title>
   <style>
     :root{
-      /* Papel y ancho útil */
-      --paper: 58mm;
-      --w: 48mm;
+      /* Papel y ancho útil para 3" (RJ-3050Ai) */
+      --paper: 80mm;   /* ancho del rollo */
+      --w: 72mm;       /* ancho útil aproximado imprimible */
 
-      /* Tipos y tamaños */
+      /* Tipos y tamaños (puedes ajustar si lo quieres más grande) */
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       --fs: 3.2mm;       /* base */
-      --fs-head: 4.6mm;  /* título */
-      --fs-sub: 2.9mm;   /* detalles */
+      --fs-head: 4.8mm;  /* título */
+      --fs-sub: 3.0mm;   /* detalles */
       --line: #000;
     }
 
@@ -28,7 +28,7 @@
     #ticket{
       width: var(--w);
       max-width: var(--w);
-      padding: 2mm 1.5mm 2mm;
+      padding: 2mm 2mm 2mm; /* un pelín más de margen lateral en 80mm */
       margin: 0 auto;
     }
 
@@ -46,24 +46,24 @@
       padding: 0 0 .8mm 0;
     }
 
-    /* Columnas */
+    /* Columnas (ajustadas al ancho útil 72mm) */
     .qty-col{
-      width: 8mm;               /* 👉 más espacio reservado para la cantidad */
+      width: 10mm;               /* más espacio para QTY en 80mm */
       text-align: right;
-      padding-right: 2mm;       /* 👉 más separación respecto a la descripción */
-      font-weight: 700;         /* 👉 negrita en QTY */
-      font-size: calc(var(--fs) + 0.6mm); /* 👉 un poco más grande que el base */
-    }
-    .desc-col{
-      width: calc(100% - 8mm - 13mm);  /* se ajusta al nuevo ancho de QTY */
-      padding-left: 0;                  /* productos pegados a la izquierda */
+      padding-right: 2mm;
+      font-weight: 700;
+      font-size: calc(var(--fs) + 0.6mm);
     }
     .total-col{
-      width: 13mm;
+      width: 18mm;               /* total más ancho para importes grandes */
       text-align: right;
     }
+    .desc-col{
+      width: calc(100% - 10mm - 18mm);
+      padding-left: 0;
+    }
 
-    /* 👉 mover SOLO el encabezado "DESCRIPCIÓN" a la derecha */
+    /* Solo el encabezado "DESCRIPCIÓN" con un pequeño sangrado */
     thead .desc-col{ padding-left: 2.5mm; }
 
     td{
@@ -82,17 +82,18 @@
       display:block;
       font-size: var(--fs);
       font-weight: 700;
-      margin-left: -1.2mm;      /* 👉 solo filas: más a la izquierda */
+      margin-left: -1.2mm;
     }
     .meta-line{
       display:flex; justify-content: space-between; align-items: baseline;
       margin-top:.2mm;
-      margin-left:-1.2mm;       /* alinea con el nombre */
+      margin-left:-1.2mm;
+      gap: 2mm;
     }
     .unit-price{ font-weight:700; }
     .upc-inline{
-      font-size: var(--fs);     /* grande */
-      font-weight: 800;         /* negrita fuerte */
+      font-size: var(--fs);
+      font-weight: 800;
       color:#000;
       margin-left: 2mm;
       white-space: nowrap;
@@ -175,7 +176,7 @@
   <!-- Botones -->
   <div id="uiBtns">
     <button id="printBtn" class="btn">Imprimir</button>
-    <button id="epsonBtn" class="btn btn-green">Enviar a Epson</button>
+    <button id="brotherBtn" class="btn btn-green">Enviar a Brother</button>
   </div>
 
   <!-- Librerías -->
@@ -246,30 +247,39 @@
     /* ========= Botones ========= */
     document.getElementById("printBtn").onclick = () => window.print();
 
-    // Enviar a Epson (máxima nitidez)
-    document.getElementById("epsonBtn").onclick = async () => {
+    // Enviar a Brother RJ-3050Ai (alta nitidez)
+    document.getElementById("brotherBtn").onclick = async () => {
       try {
         const ticket = document.getElementById('ticket');
+        // Escala alta para mejor definición en impresión térmica
         const canvas = await html2canvas(ticket, { scale: 3, backgroundColor: '#ffffff', useCORS: true });
         const imgData = canvas.toDataURL('image/png');
 
-        const mmPaperW = 58, mmContentW = 48;
+        // Dimensiones para 80mm con ancho útil ~72mm
+        const mmPaperW = 80, mmContentW = 72;
         const mmContentH = mmContentW * (canvas.height / canvas.width);
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH + 5] });
+        // centrado horizontal con un margen superior de 3mm
         doc.addImage(imgData, 'PNG', (mmPaperW - mmContentW) / 2, 3, mmContentW, mmContentH);
 
         const pdfBlob = doc.output('blob');
-        const pdfFile = new File([pdfBlob], 'ticket_58mm.pdf', { type: 'application/pdf' });
+        const pdfFile = new File([pdfBlob], 'ticket_80mm_brother.pdf', { type: 'application/pdf' });
 
+        // Compartir/abrir: útil para enviar al driver/app de Brother desde móvil
         if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-          await navigator.share({ files: [pdfFile], title: 'Ticket 58mm', text: 'Imprimir en Epson TM Print Assistant' });
+          await navigator.share({
+            files: [pdfFile],
+            title: 'Ticket 80mm (Brother RJ-3050Ai)',
+            text: 'Imprimir en Brother RJ-3050Ai'
+          });
         } else {
           const url = URL.createObjectURL(pdfBlob);
           const a = document.createElement('a');
-          a.href = url; a.download = 'ticket_58mm.pdf'; a.click();
+          a.href = url; a.download = 'ticket_80mm_brother.pdf'; a.click();
           URL.revokeObjectURL(url);
+          alert('PDF generado. Ábrelo con la app/controlador de Brother para imprimir.');
         }
       } catch (e) {
         alert('Error al generar/enviar el PDF: ' + e.message);
