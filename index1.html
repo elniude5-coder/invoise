@@ -2,19 +2,19 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=80mm, initial-scale=1.0" />
-  <title>Ticket 80mm · Brother RJ-3050Ai</title>
+  <meta name="viewport" content="width=76mm, initial-scale=1.0" />
+  <title>Ticket Brother 76mm</title>
   <style>
     :root{
-      /* Papel y ancho útil para 3" (RJ-3050Ai) */
-      --paper: 80mm;   /* ancho del rollo */
-      --w: 72mm;       /* ancho útil aproximado imprimible */
-
-      /* Tipos y tamaños (puedes ajustar si lo quieres más grande) */
+      /* Brother RJ-3050Ai */
+      --paper: 76mm;   /* ancho físico del rollo */
+      --w: 70mm;       /* ancho útil de contenido, deja ~3mm por lado */
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      --fs: 3.2mm;       /* base */
-      --fs-head: 4.8mm;  /* título */
-      --fs-sub: 3.0mm;   /* detalles */
+
+      /* Tamaños pensados para 76mm */
+      --fs: 3.2mm;        /* base */
+      --fs-head: 4.8mm;   /* título */
+      --fs-sub: 3.0mm;    /* detalles */
       --line: #000;
     }
 
@@ -28,7 +28,7 @@
     #ticket{
       width: var(--w);
       max-width: var(--w);
-      padding: 2mm 2mm 2mm; /* un pelín más de margen lateral en 80mm */
+      padding: 2mm 2mm 2mm;
       margin: 0 auto;
     }
 
@@ -46,25 +46,24 @@
       padding: 0 0 .8mm 0;
     }
 
-    /* Columnas (ajustadas al ancho útil 72mm) */
+    /* Columnas (QTY con aire, en negrita y un poco más grande) */
     .qty-col{
-      width: 10mm;               /* más espacio para QTY en 80mm */
+      width: 10mm;              /* más ancho en Brother */
       text-align: right;
-      padding-right: 2mm;
+      padding-right: 2mm;       /* separación clara de la descripción */
       font-weight: 700;
       font-size: calc(var(--fs) + 0.6mm);
     }
-    .total-col{
-      width: 18mm;               /* total más ancho para importes grandes */
-      text-align: right;
-    }
     .desc-col{
-      width: calc(100% - 10mm - 18mm);
+      width: calc(100% - 10mm - 16mm);
       padding-left: 0;
     }
-
-    /* Solo el encabezado "DESCRIPCIÓN" con un pequeño sangrado */
-    thead .desc-col{ padding-left: 2.5mm; }
+    .total-col{
+      width: 16mm;
+      text-align: right;
+    }
+    /* SOLO el encabezado "DESCRIPCIÓN" más a la derecha */
+    thead .desc-col{ padding-left: 3mm; }
 
     td{
       vertical-align: top;
@@ -82,18 +81,17 @@
       display:block;
       font-size: var(--fs);
       font-weight: 700;
-      margin-left: -1.2mm;
+      margin-left: -1.2mm;    /* productos bien pegados a la izquierda */
     }
     .meta-line{
       display:flex; justify-content: space-between; align-items: baseline;
       margin-top:.2mm;
       margin-left:-1.2mm;
-      gap: 2mm;
     }
     .unit-price{ font-weight:700; }
     .upc-inline{
-      font-size: var(--fs);
-      font-weight: 800;
+      font-size: var(--fs);    /* grande */
+      font-weight: 800;        /* negrita fuerte */
       color:#000;
       margin-left: 2mm;
       white-space: nowrap;
@@ -103,18 +101,18 @@
     .totals{ margin-top: 2mm; font-size: var(--fs); }
     .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; }
     .bold{ font-weight:700; }
-    .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1mm); font-weight:800; }
+    .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1.2mm); font-weight:800; }
 
     /* Pie */
     .footer{ text-align:center; margin-top: 2mm; font-weight:700; font-size: var(--fs-sub); }
 
-    /* Print */
+    /* Print/AirPrint */
     @media print{
       #uiBtns{ display:none !important; }
       @page{ size: var(--paper) auto; margin: 0; }
     }
 
-    /* Botonera */
+    /* Controles */
     #uiBtns{
       position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999; flex-direction: column;
     }
@@ -175,8 +173,8 @@
 
   <!-- Botones -->
   <div id="uiBtns">
-    <button id="printBtn" class="btn">Imprimir</button>
-    <button id="brotherBtn" class="btn btn-green">Enviar a Brother</button>
+    <button id="printBtn" class="btn">Imprimir (AirPrint)</button>
+    <button id="shareBtn" class="btn btn-green">Compartir/Enviar (PDF 76mm)</button>
   </div>
 
   <!-- Librerías -->
@@ -184,13 +182,13 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
-    /* ========= Utilidades ========= */
+    /* ===== Utilidades ===== */
     const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
     const splitAny = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
     const num = s => { if (s == null) return 0; const n = parseFloat(String(s).replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-    /* ========= Parámetros ========= */
+    /* ===== Parámetros ===== */
     const q = new URLSearchParams(location.search);
     const boleta    = q.get("boleta")    || "";
     const mesa      = q.get("mesa")      || "";
@@ -203,15 +201,15 @@
     let upcs          = splitAny(q.get("upcs"));
     let p_units       = splitAny(q.get("p_unit"));
 
-    /* ========= Render ========= */
-    (() => {
+    /* ===== Render ===== */
+    (function render(){
       setText("fecha_text", fecha);
       setText("factura_text", boleta || "-");
-      if (mesa) { document.getElementById("cliente_wrap").style.display = "block"; setText("cliente_text", mesa); }
-      if (direccion) { document.getElementById("dir_wrap").style.display = "block"; setText("dir_text", direccion); }
+      if (mesa){ document.getElementById("cliente_wrap").style.display="block"; setText("cliente_text", mesa); }
+      if (direccion){ document.getElementById("dir_wrap").style.display="block"; setText("dir_text", direccion); }
       setText("estado_text", estado);
 
-      const tbody = document.getElementById("tbody");
+      const tbody = document.getElementById("tbody"); tbody.innerHTML = "";
       let units = 0, grand = 0;
       const n = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
 
@@ -244,45 +242,51 @@
       setText("grand", "$" + fmt(grand));
     })();
 
-    /* ========= Botones ========= */
-    document.getElementById("printBtn").onclick = () => window.print();
+    /* ===== Botones ===== */
+    document.getElementById("printBtn").onclick = () => {
+      // Abre el diálogo de impresión del sistema (AirPrint).
+      window.print();
+    };
 
-    // Enviar a Brother RJ-3050Ai (alta nitidez)
-    document.getElementById("brotherBtn").onclick = async () => {
+    document.getElementById("shareBtn").onclick = async () => {
       try {
         const ticket = document.getElementById('ticket');
-        // Escala alta para mejor definición en impresión térmica
+        // Captura a escala alta para nitidez térmica
         const canvas = await html2canvas(ticket, { scale: 3, backgroundColor: '#ffffff', useCORS: true });
         const imgData = canvas.toDataURL('image/png');
 
-        // Dimensiones para 80mm con ancho útil ~72mm
-        const mmPaperW = 80, mmContentW = 72;
+        // PDF Brother 76mm
+        const mmPaperW   = 76;
+        const mmContentW = 70;
         const mmContentH = mmContentW * (canvas.height / canvas.width);
-
+        const topPad = 3; // margen superior
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH + 5] });
-        // centrado horizontal con un margen superior de 3mm
-        doc.addImage(imgData, 'PNG', (mmPaperW - mmContentW) / 2, 3, mmContentW, mmContentH);
+        const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH + topPad + 2] });
+        doc.addImage(imgData, 'PNG', (mmPaperW-mmContentW)/2, topPad, mmContentW, mmContentH);
 
         const pdfBlob = doc.output('blob');
-        const pdfFile = new File([pdfBlob], 'ticket_80mm_brother.pdf', { type: 'application/pdf' });
+        const pdfFile = new File([pdfBlob], 'ticket_brother_76mm.pdf', { type: 'application/pdf' });
 
-        // Compartir/abrir: útil para enviar al driver/app de Brother desde móvil
         if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
           await navigator.share({
             files: [pdfFile],
-            title: 'Ticket 80mm (Brother RJ-3050Ai)',
+            title: 'Ticket 76mm',
             text: 'Imprimir en Brother RJ-3050Ai'
           });
         } else {
+          // Fallback: descarga directa; luego "Compartir" → Imprimir o iPrint&Label
           const url = URL.createObjectURL(pdfBlob);
           const a = document.createElement('a');
-          a.href = url; a.download = 'ticket_80mm_brother.pdf'; a.click();
+          a.href = url;
+          a.download = 'ticket_brother_76mm.pdf';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
           URL.revokeObjectURL(url);
-          alert('PDF generado. Ábrelo con la app/controlador de Brother para imprimir.');
+          alert('Se guardó "ticket_brother_76mm.pdf". Abre y elige Imprimir o iPrint&Label.');
         }
       } catch (e) {
-        alert('Error al generar/enviar el PDF: ' + e.message);
+        alert('No pude preparar el PDF: ' + e.message);
       }
     };
   </script>
