@@ -6,15 +6,14 @@
   <title>Ticket Brother 76mm</title>
   <style>
     :root{
-      /* Brother RJ-3050Ai */
-      --paper: 76mm;   /* ancho físico del rollo */
-      --w: 70mm;       /* ancho útil de contenido, deja ~3mm por lado */
+      --paper: 76mm;   /* ancho físico Brother */
+      --w: 70mm;       /* contenido útil */
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-      /* Tamaños pensados para 76mm */
-      --fs: 3.2mm;        /* base */
-      --fs-head: 4.8mm;   /* título */
-      --fs-sub: 3.0mm;    /* detalles */
+      /* Tamaños */
+      --fs: 3.2mm;      
+      --fs-head: 4.8mm;
+      --fs-sub: 3.0mm;
       --line: #000;
     }
 
@@ -23,6 +22,7 @@
       margin:0; padding:0; background:#fff; color:#000;
       font-family:var(--font);
       font-size:var(--fs);
+      font-weight:700;   /* 🔥 TODO EN NEGRITA */
       width: var(--paper);
     }
     #ticket{
@@ -30,39 +30,34 @@
       max-width: var(--w);
       padding: 2mm 2mm 2mm;
       margin: 0 auto;
+      font-weight:700;   /* fuerza negrita */
     }
 
     /* Encabezado negocio */
     .store-header{ text-align:center; margin-bottom: 2mm; }
     .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; text-transform: uppercase; letter-spacing:.2mm; }
-    .store-details{ font-size: var(--fs-sub); line-height:1.25; margin-top:.6mm; }
+    .store-details{ font-size: var(--fs-sub); line-height:1.25; margin-top:.6mm; font-weight:700; }
     .divider{ border-top:.3mm dashed var(--line); margin: 2mm 0; }
 
     /* Tabla */
     table{ width:100%; border-collapse: collapse; table-layout: fixed; margin-top:1mm; }
     thead th{
-      text-align:left; font-weight:700; font-size: var(--fs);
+      text-align:left; font-size: var(--fs);
       border-bottom: .3mm solid var(--line);
       padding: 0 0 .8mm 0;
+      font-weight:700;
     }
 
-    /* Columnas (QTY con aire, en negrita y un poco más grande) */
+    /* Columnas */
     .qty-col{
-      width: 10mm;              /* más ancho en Brother */
+      width: 10mm;
       text-align: right;
-      padding-right: 2mm;       /* separación clara de la descripción */
-      font-weight: 700;
+      padding-right: 2mm;
       font-size: calc(var(--fs) + 0.6mm);
+      font-weight:700;
     }
-    .desc-col{
-      width: calc(100% - 10mm - 16mm);
-      padding-left: 0;
-    }
-    .total-col{
-      width: 16mm;
-      text-align: right;
-    }
-    /* SOLO el encabezado "DESCRIPCIÓN" más a la derecha */
+    .desc-col{ width: calc(100% - 10mm - 16mm); padding-left: 0; }
+    .total-col{ width: 16mm; text-align: right; font-weight:700; }
     thead .desc-col{ padding-left: 3mm; }
 
     td{
@@ -71,61 +66,60 @@
       padding-left: 0;
       font-size: var(--fs-sub);
       line-height: 1.25;
-      word-wrap: break-word;
+      font-weight:700;
     }
     .line-row{ border-bottom:.3mm dashed #000; }
     .line-row:last-child{ border-bottom: none; }
 
-    /* Filas: nombre + meta (precio / código) */
     .item-name{
       display:block;
       font-size: var(--fs);
-      font-weight: 700;
-      margin-left: -1.2mm;    /* productos bien pegados a la izquierda */
+      font-weight:700;
+      margin-left: -1.2mm;
     }
     .meta-line{
       display:flex; justify-content: space-between; align-items: baseline;
       margin-top:.2mm;
       margin-left:-1.2mm;
+      font-weight:700;
     }
     .unit-price{ font-weight:700; }
     .upc-inline{
-      font-size: var(--fs);    /* grande */
-      font-weight: 800;        /* negrita fuerte */
+      font-size: var(--fs);
+      font-weight:800;
       color:#000;
       margin-left: 2mm;
       white-space: nowrap;
     }
 
     /* Totales */
-    .totals{ margin-top: 2mm; font-size: var(--fs); }
-    .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; }
-    .bold{ font-weight:700; }
+    .totals{ margin-top: 2mm; font-size: var(--fs); font-weight:700; }
+    .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; font-weight:700; }
+    .bold{ font-weight:800; }
     .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1.2mm); font-weight:800; }
 
     /* Pie */
-    .footer{ text-align:center; margin-top: 2mm; font-weight:700; font-size: var(--fs-sub); }
+    .footer{ text-align:center; margin-top: 2mm; font-size: var(--fs-sub); font-weight:700; }
 
-    /* Print/AirPrint */
     @media print{
       #uiBtns{ display:none !important; }
       @page{ size: var(--paper) auto; margin: 0; }
     }
 
-    /* Controles */
+    /* Botonera */
     #uiBtns{
       position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999; flex-direction: column;
     }
     .btn{
       padding:6px 10px; border-radius:6px; border:1px solid #000; background:#fff; color:#000; cursor:pointer;
-      font-family: var(--font); font-size: 12px;
+      font-family: var(--font); font-size: 12px; font-weight:700;
     }
     .btn-green{ border-color:#0a0; color:#0a0; background:#eaffea; }
   </style>
 </head>
 <body>
   <div id="ticket">
-    <!-- Encabezado empresa -->
+    <!-- Encabezado -->
     <div class="store-header">
       <div class="store-title">MD MAGUEY DISTRIBUTOR</div>
       <div class="store-details">
@@ -182,13 +176,11 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
-    /* ===== Utilidades ===== */
     const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
     const splitAny = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
     const num = s => { if (s == null) return 0; const n = parseFloat(String(s).replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
-    /* ===== Parámetros ===== */
     const q = new URLSearchParams(location.search);
     const boleta    = q.get("boleta")    || "";
     const mesa      = q.get("mesa")      || "";
@@ -201,7 +193,6 @@
     let upcs          = splitAny(q.get("upcs"));
     let p_units       = splitAny(q.get("p_unit"));
 
-    /* ===== Render ===== */
     (function render(){
       setText("fecha_text", fecha);
       setText("factura_text", boleta || "-");
@@ -242,24 +233,18 @@
       setText("grand", "$" + fmt(grand));
     })();
 
-    /* ===== Botones ===== */
-    document.getElementById("printBtn").onclick = () => {
-      // Abre el diálogo de impresión del sistema (AirPrint).
-      window.print();
-    };
+    document.getElementById("printBtn").onclick = () => { window.print(); };
 
     document.getElementById("shareBtn").onclick = async () => {
       try {
         const ticket = document.getElementById('ticket');
-        // Captura a escala alta para nitidez térmica
         const canvas = await html2canvas(ticket, { scale: 3, backgroundColor: '#ffffff', useCORS: true });
         const imgData = canvas.toDataURL('image/png');
 
-        // PDF Brother 76mm
         const mmPaperW   = 76;
         const mmContentW = 70;
         const mmContentH = mmContentW * (canvas.height / canvas.width);
-        const topPad = 3; // margen superior
+        const topPad = 3;
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH + topPad + 2] });
         doc.addImage(imgData, 'PNG', (mmPaperW-mmContentW)/2, topPad, mmContentW, mmContentH);
@@ -268,13 +253,8 @@
         const pdfFile = new File([pdfBlob], 'ticket_brother_76mm.pdf', { type: 'application/pdf' });
 
         if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-          await navigator.share({
-            files: [pdfFile],
-            title: 'Ticket 76mm',
-            text: 'Imprimir en Brother RJ-3050Ai'
-          });
+          await navigator.share({ files: [pdfFile], title: 'Ticket 76mm', text: 'Imprimir en Brother RJ-3050Ai' });
         } else {
-          // Fallback: descarga directa; luego "Compartir" → Imprimir o iPrint&Label
           const url = URL.createObjectURL(pdfBlob);
           const a = document.createElement('a');
           a.href = url;
@@ -283,10 +263,10 @@
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
-          alert('Se guardó "ticket_brother_76mm.pdf". Abre y elige Imprimir o iPrint&Label.');
+          alert('Se guardó "ticket_brother_76mm.pdf". Ábrelo e imprime.');
         }
       } catch (e) {
-        alert('No pude preparar el PDF: ' + e.message);
+        alert('Error al generar PDF: ' + e.message);
       }
     };
   </script>
