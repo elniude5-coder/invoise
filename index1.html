@@ -6,23 +6,21 @@
   <title>Ticket Brother 76mm</title>
   <style>
     :root{
-      --paper: 76mm;   /* ancho físico Brother */
-      --w: 70mm;       /* contenido útil */
+      --paper: 76mm;
+      --w: 70mm;
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-      /* Tamaños */
-      --fs: 3.2mm;      
+      --fs: 3.2mm;
       --fs-head: 4.8mm;
       --fs-sub: 3.0mm;
       --line: #000;
     }
-
     *{ box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     html, body{
       margin:0; padding:0; background:#fff; color:#000;
       font-family:var(--font);
       font-size:var(--fs);
-      font-weight:700;   /* 🔥 TODO EN NEGRITA */
+      font-weight:700;
       width: var(--paper);
     }
     #ticket{
@@ -30,10 +28,10 @@
       max-width: var(--w);
       padding: 2mm 2mm 2mm;
       margin: 0 auto;
-      font-weight:700;   /* fuerza negrita */
+      font-weight:700;
     }
 
-    /* Encabezado negocio */
+    /* Encabezado */
     .store-header{ text-align:center; margin-bottom: 2mm; }
     .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; text-transform: uppercase; letter-spacing:.2mm; }
     .store-details{ font-size: var(--fs-sub); line-height:1.25; margin-top:.6mm; font-weight:700; }
@@ -48,17 +46,16 @@
       font-weight:700;
     }
 
-    /* Columnas */
     .qty-col{
-      width: 10mm;
+      width: 11mm;
       text-align: right;
       padding-right: 2mm;
-      font-size: calc(var(--fs) + 0.6mm);
+      font-size: calc(var(--fs) + 0.8mm);
       font-weight:700;
     }
-    .desc-col{ width: calc(100% - 10mm - 16mm); padding-left: 0; }
+    .desc-col{ width: calc(100% - 11mm - 16mm); padding-left: 0; }
     .total-col{ width: 16mm; text-align: right; font-weight:700; }
-    thead .desc-col{ padding-left: 3mm; }
+    thead .desc-col{ padding-left: 4mm; }
 
     td{
       vertical-align: top;
@@ -71,12 +68,7 @@
     .line-row{ border-bottom:.3mm dashed #000; }
     .line-row:last-child{ border-bottom: none; }
 
-    .item-name{
-      display:block;
-      font-size: var(--fs);
-      font-weight:700;
-      margin-left: -1.2mm;
-    }
+    .item-name{ display:block; font-size: var(--fs); font-weight:700; margin-left: -1.2mm; }
     .meta-line{
       display:flex; justify-content: space-between; align-items: baseline;
       margin-top:.2mm;
@@ -84,13 +76,7 @@
       font-weight:700;
     }
     .unit-price{ font-weight:700; }
-    .upc-inline{
-      font-size: var(--fs);
-      font-weight:800;
-      color:#000;
-      margin-left: 2mm;
-      white-space: nowrap;
-    }
+    .upc-inline{ font-size: var(--fs); font-weight:800; color:#000; margin-left: 2mm; white-space: nowrap; }
 
     /* Totales */
     .totals{ margin-top: 2mm; font-size: var(--fs); font-weight:700; }
@@ -106,7 +92,6 @@
       @page{ size: var(--paper) auto; margin: 0; }
     }
 
-    /* Botonera */
     #uiBtns{
       position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999; flex-direction: column;
     }
@@ -121,10 +106,10 @@
   <div id="ticket">
     <!-- Encabezado -->
     <div class="store-header">
-      <div class="store-title">MD MAGUEY DISTRIBUTOR</div>
+      <div class="store-title">Gellis Distributor, Inc</div>
       <div class="store-details">
-        250 ROBINSON AVE #2 · BRONX NY 10465<br>
-        Tel: 347-589-2676
+        Belleville, NJ 07109<br>
+        Tel: 973-652-5547
       </div>
     </div>
 
