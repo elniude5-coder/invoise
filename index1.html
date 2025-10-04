@@ -2,12 +2,12 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=76mm, initial-scale=1.0" />
-  <title>Ticket Brother 76mm — Mejorado</title>
+  <meta name="viewport" content="width=80mm, initial-scale=1.0" />
+  <title>Ticket Brother 80mm — Mejorado</title>
   <style>
     :root{
-      --paper: 76mm;            /* ancho del rollo */
-      --w: 70mm;                /* ancho útil del contenido */
+      --paper: 80mm;            /* ancho del rollo */
+      --w: 76mm;                /* ancho útil del contenido */
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
       --fs: 3.2mm;              /* tamaño base */
@@ -39,7 +39,7 @@
     .divider{ border-top:.3mm dashed var(--line); margin: 2mm 0; }
 
     /* Logo opcional */
-    .logo{ max-width: 42mm; max-height: 14mm; display:block; margin: 0 auto 1mm; }
+    .logo{ max-width: 50mm; max-height: 18mm; display:block; margin: 0 auto 1mm; }
 
     /* Tabla */
     table{ width:100%; border-collapse: collapse; table-layout: fixed; margin-top:1mm; }
@@ -50,9 +50,9 @@
       font-weight:700;
     }
 
-    .qty-col{ width: 11mm; text-align: right; padding-right: 2mm; font-size: calc(var(--fs) + 0.8mm); font-weight:700; }
-    .desc-col{ width: calc(100% - 11mm - 16mm); padding-left: 0; }
-    .total-col{ width: 16mm; text-align: right; font-weight:700; }
+    .qty-col{ width: 14mm; text-align: right; padding-right: 2mm; font-size: calc(var(--fs) + 0.8mm); font-weight:700; }
+    .desc-col{ width: calc(100% - 14mm - 18mm); padding-left: 0; }
+    .total-col{ width: 18mm; text-align: right; font-weight:700; }
     thead .desc-col{ padding-left: 4mm; }
 
     td{ vertical-align: top; padding-top: .6mm; padding-left: 0; font-size: var(--fs-sub); line-height: 1.25; font-weight:700; }
@@ -140,7 +140,7 @@
   <!-- Botones (ocultos al imprimir) -->
   <div id="uiBtns">
     <button id="printBtn" class="btn">Imprimir (AirPrint)</button>
-    <button id="shareBtn" class="btn btn-green">Compartir/Enviar (PDF 76mm)</button>
+    <button id="shareBtn" class="btn btn-green">Compartir/Enviar (PDF 80mm)</button>
   </div>
 
   <!-- Librerías -->
@@ -274,41 +274,11 @@
         const canvas = await html2canvas(ticket, { scale: 3, backgroundColor: '#ffffff', useCORS: true });
         const imgData = canvas.toDataURL('image/png');
 
-        const mmPaperW   = 76;
-        const mmContentW = 70;
+        const mmPaperW   = 80;
+        const mmContentW = 76;
         const mmContentH = mmContentW * (canvas.height / canvas.width);
-        const topPad = 3;
+        const topPad = 2;
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH + topPad + 2] });
 
-        // Añadir imagen con compresión rápida para PDFs pequeños
-        doc.addImage(imgData, 'PNG', (mmPaperW-mmContentW)/2, topPad, mmContentW, mmContentH, undefined, 'FAST');
-        doc.setProperties({
-          title: `Ticket ${new Date().toISOString().slice(0,10)}`,
-          subject: 'Ticket 76mm',
-          creator: 'POS Ticket Generator'
-        });
-
-        const pdfBlob = doc.output('blob');
-        const pdfFile = new File([pdfBlob], 'ticket_brother_76mm.pdf', { type: 'application/pdf' });
-
-        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-          await navigator.share({ files: [pdfFile], title: 'Ticket 76mm', text: 'Imprimir en Brother RJ-3050Ai' });
-        } else {
-          const url = URL.createObjectURL(pdfBlob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'ticket_brother_76mm.pdf';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-          alert('Se guardó "ticket_brother_76mm.pdf". Ábrelo e imprime.');
-        }
-      } catch (e) {
-        alert('Error al generar PDF: ' + e.message);
-      }
-    };
-  </script>
-</body>
-</html>
+        doc.addImage(imgData, 'PNG', (mmPaperW-mmContentW)/2, topPad, mmContentW, mmContentH, undefined,
