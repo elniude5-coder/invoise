@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=76mm, initial-scale=1.0" />
-  <title>Ticket Brother 76mm</title>
+  <title>Ticket Brother 76mm — Mejorado</title>
   <style>
     :root{
-      --paper: 76mm;
-      --w: 70mm;
+      --paper: 76mm;            /* ancho del rollo */
+      --w: 70mm;                /* ancho útil del contenido */
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-      --fs: 3.2mm;
-      --fs-head: 4.8mm;
-      --fs-sub: 3.0mm;
-      --line: #000;
+      --fs: 3.2mm;              /* tamaño base */
+      --fs-head: 4.8mm;         /* encabezado */
+      --fs-sub: 3.0mm;          /* subtítulos */
+      --line: #000;             /* color líneas */
     }
+
     *{ box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     html, body{
       margin:0; padding:0; background:#fff; color:#000;
@@ -34,8 +35,11 @@
     /* Encabezado */
     .store-header{ text-align:center; margin-bottom: 2mm; }
     .store-title{ font-size: var(--fs-head); font-weight:700; margin: 0.5mm 0 0 0; text-transform: uppercase; letter-spacing:.2mm; }
-    .store-details{ font-size: var(--fs-sub); line-height:1.25; margin-top:.6mm; font-weight:700; }
+    .store-details{ font-size: var(--fs-sub); line-height:1.25; margin-top:.6mm; font-weight:700; word-break: break-word; }
     .divider{ border-top:.3mm dashed var(--line); margin: 2mm 0; }
+
+    /* Logo opcional */
+    .logo{ max-width: 42mm; max-height: 14mm; display:block; margin: 0 auto 1mm; }
 
     /* Tabla */
     table{ width:100%; border-collapse: collapse; table-layout: fixed; margin-top:1mm; }
@@ -46,59 +50,38 @@
       font-weight:700;
     }
 
-    .qty-col{
-      width: 11mm;
-      text-align: right;
-      padding-right: 2mm;
-      font-size: calc(var(--fs) + 0.8mm);
-      font-weight:700;
-    }
+    .qty-col{ width: 11mm; text-align: right; padding-right: 2mm; font-size: calc(var(--fs) + 0.8mm); font-weight:700; }
     .desc-col{ width: calc(100% - 11mm - 16mm); padding-left: 0; }
     .total-col{ width: 16mm; text-align: right; font-weight:700; }
     thead .desc-col{ padding-left: 4mm; }
 
-    td{
-      vertical-align: top;
-      padding-top: .6mm;
-      padding-left: 0;
-      font-size: var(--fs-sub);
-      line-height: 1.25;
-      font-weight:700;
-    }
+    td{ vertical-align: top; padding-top: .6mm; padding-left: 0; font-size: var(--fs-sub); line-height: 1.25; font-weight:700; }
     .line-row{ border-bottom:.3mm dashed #000; }
     .line-row:last-child{ border-bottom: none; }
 
-    .item-name{ display:block; font-size: var(--fs); font-weight:700; margin-left: -1.2mm; }
-    .meta-line{
-      display:flex; justify-content: space-between; align-items: baseline;
-      margin-top:.2mm;
-      margin-left:-1.2mm;
-      font-weight:700;
-    }
-    .unit-price{ font-weight:700; }
-    .upc-inline{ font-size: var(--fs); font-weight:800; color:#000; margin-left: 2mm; white-space: nowrap; }
+    .item-name{ display:block; font-size: var(--fs); font-weight:700; margin-left: -1.2mm; word-break: break-word; }
+    .meta-line{ display:flex; justify-content: space-between; align-items: baseline; margin-top:.2mm; margin-left:-1.2mm; font-weight:700; gap: 2mm; }
+    .unit-price{ font-weight:700; white-space: nowrap; }
+    .upc-inline{ font-size: var(--fs); font-weight:800; color:#000; white-space: nowrap; }
 
     /* Totales */
     .totals{ margin-top: 2mm; font-size: var(--fs); font-weight:700; }
     .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; font-weight:700; }
+    .muted{ opacity:.9; font-weight:700; }
     .bold{ font-weight:800; }
     .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1.2mm); font-weight:800; }
 
     /* Pie */
-    .footer{ text-align:center; margin-top: 2mm; font-size: var(--fs-sub); font-weight:700; }
+    .footer{ text-align:center; margin-top: 2mm; font-size: var(--fs-sub); font-weight:700; word-break: break-word; }
 
     @media print{
       #uiBtns{ display:none !important; }
       @page{ size: var(--paper) auto; margin: 0; }
     }
 
-    #uiBtns{
-      position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999; flex-direction: column;
-    }
-    .btn{
-      padding:6px 10px; border-radius:6px; border:1px solid #000; background:#fff; color:#000; cursor:pointer;
-      font-family: var(--font); font-size: 12px; font-weight:700;
-    }
+    /* UI (oculto en impresión) */
+    #uiBtns{ position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999; flex-direction: column; }
+    .btn{ padding:6px 10px; border-radius:6px; border:1px solid #000; background:#fff; color:#000; cursor:pointer; font-family: var(--font); font-size: 12px; font-weight:700; }
     .btn-green{ border-color:#0a0; color:#0a0; background:#eaffea; }
   </style>
 </head>
@@ -106,11 +89,9 @@
   <div id="ticket">
     <!-- Encabezado -->
     <div class="store-header">
-      <div class="store-title">Gellis Distributor, Inc</div>
-      <div class="store-details">
-        Belleville, NJ 07109<br>
-        Tel: 973-652-5547
-      </div>
+      <img id="logo" class="logo" alt="Logo" style="display:none" />
+      <div id="store_title" class="store-title">Gellis Distributor, Inc</div>
+      <div class="store-details" id="store_details">Belleville, NJ 07109<br>Tel: 973-652-5547</div>
     </div>
 
     <div class="divider"></div>
@@ -121,6 +102,7 @@
       <div><b>Factura No.:</b> <span id="factura_text"></span></div>
       <div id="cliente_wrap" style="display:none;"><b>Cliente:</b> <span id="cliente_text"></span></div>
       <div id="dir_wrap" style="display:none;"><b>Dirección:</b> <span id="dir_text"></span></div>
+      <div id="pago_wrap" style="display:none;"><b>Pago:</b> <span id="pago_text"></span></div>
     </div>
 
     <div class="divider"></div>
@@ -139,18 +121,23 @@
 
     <!-- Totales -->
     <div class="totals">
+      <div class="total-line"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+      <div class="total-line muted" id="descuento_line" style="display:none"><span>Descuento</span><span id="descuento">-$0.00</span></div>
+      <div class="total-line muted" id="impuesto_line" style="display:none"><span>Impuesto</span><span id="impuesto">$0.00</span></div>
       <div class="total-line"><span>Total Unidades</span><span id="units">0</span></div>
       <div class="total-line bold"><span>TOTAL A PAGAR</span><span id="grand">$0.00</span></div>
+      <div class="total-line" id="efectivo_line" style="display:none"><span>Efectivo</span><span id="efectivo_text">$0.00</span></div>
+      <div class="total-line" id="cambio_line" style="display:none"><span>Cambio</span><span id="cambio_text">$0.00</span></div>
     </div>
 
     <div class="divider"></div>
     <div class="footer">
-      ¡Gracias por su compra!<br>
+      <span id="nota_text">¡Gracias por su compra!</span><br>
       <span id="estado_text"></span>
     </div>
   </div>
 
-  <!-- Botones -->
+  <!-- Botones (ocultos al imprimir) -->
   <div id="uiBtns">
     <button id="printBtn" class="btn">Imprimir (AirPrint)</button>
     <button id="shareBtn" class="btn btn-green">Compartir/Enviar (PDF 76mm)</button>
@@ -161,32 +148,73 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
-    const fmt = v => Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+    // Utils
+    const fmt = (v, currency) => `${currency}${Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2})}`;
     const splitAny = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
     const num = s => { if (s == null) return 0; const n = parseFloat(String(s).replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const show = (id, v=true) => { const el = document.getElementById(id); if (el) el.style.display = v ? "block" : "none"; };
 
     const q = new URLSearchParams(location.search);
-    const boleta    = q.get("boleta")    || "";
-    const mesa      = q.get("mesa")      || "";
-    const direccion = q.get("direccion") || "";
-    const fecha     = q.get("fecha")     || new Date().toLocaleDateString();
-    const estado    = q.get("estado")    || "";
 
+    // Datos de cabecera / negocio
+    const titulo    = q.get("titulo")      || "Gellis Distributor, Inc";
+    const detalles  = q.get("detalles")    || "Belleville, NJ 07109\nTel: 973-652-5547";
+    const logoUrl   = q.get("logo")        || ""; // URL de imagen (CORS habilitado)
+
+    const boleta    = q.get("boleta")      || "";
+    const mesa      = q.get("mesa")        || ""; // cliente
+    const direccion = q.get("direccion")   || "";
+    const fecha     = q.get("fecha")       || new Date().toLocaleDateString();
+    const estado    = q.get("estado")      || "";
+    const nota      = q.get("nota")        || "¡Gracias por su compra!";
+
+    // Pago
+    const pago      = q.get("pago")        || ""; // Efectivo, Tarjeta, Transferencia, etc.
+    const efectivo  = num(q.get("efectivo")); // recibido
+
+    // Configuración monetaria
+    const currency  = q.get("moneda")      || "$";
+
+    // Descuento e impuesto (puede ser absoluto o %)
+    const descStr   = q.get("descuento")   || ""; // ej: 5 o 5% o 2.50
+    const itbisStr  = q.get("itbis")       || ""; // ej: 18% o 0.18 o 0
+
+    // Ítems
     let cantidades    = splitAny(q.get("cantidades"));
     let descripciones = splitAny(q.get("servicios"));
     let upcs          = splitAny(q.get("upcs"));
     let p_units       = splitAny(q.get("p_unit"));
 
+    const parsePercentOrNumber = (s, base=0) => {
+      if (!s) return 0;
+      const str = String(s).trim();
+      if (/%$/.test(str)) { // porcentaje explícito
+        const p = num(str.replace(/%/,""));
+        return base * (p/100);
+      }
+      const val = num(str);
+      // Si parece ser tasa (<1), interprétalo como porcentaje decimal
+      if (val > 0 && val < 1 && base > 0) return base * val;
+      return val;
+    };
+
     (function render(){
+      // Encabezado
+      document.getElementById("store_title").textContent = titulo;
+      document.getElementById("store_details").innerHTML = (detalles || "").replace(/\n/g,"<br>");
+      if (logoUrl){ const img = document.getElementById("logo"); img.src = logoUrl; img.style.display = "block"; }
+
       setText("fecha_text", fecha);
       setText("factura_text", boleta || "-");
       if (mesa){ document.getElementById("cliente_wrap").style.display="block"; setText("cliente_text", mesa); }
       if (direccion){ document.getElementById("dir_wrap").style.display="block"; setText("dir_text", direccion); }
+      if (pago){ document.getElementById("pago_wrap").style.display="block"; setText("pago_text", pago); }
       setText("estado_text", estado);
+      setText("nota_text", nota);
 
       const tbody = document.getElementById("tbody"); tbody.innerHTML = "";
-      let units = 0, grand = 0;
+      let units = 0, subtotal = 0;
       const n = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
 
       for (let i=0; i<n; i++){
@@ -196,28 +224,48 @@
         const code = upcs[i] || "";
         const line = qty * unit;
 
-        units += qty; grand += line;
+        if (qty > 0 && name){
+          units += qty; subtotal += line;
 
-        const tr = document.createElement("tr");
-        tr.className = "line-row";
-        tr.innerHTML = `
-          <td class="qty-col">${qty || ""}</td>
-          <td class="desc-col">
-            <span class="item-name">${name}</span>
-            <div class="meta-line">
-              <span class="unit-price">$${fmt(unit)}</span>
-              ${code ? `<span class="upc-inline">${code}</span>` : ``}
-            </div>
-          </td>
-          <td class="total-col">$${fmt(line)}</td>
-        `;
-        tbody.appendChild(tr);
+          const tr = document.createElement("tr");
+          tr.className = "line-row";
+          tr.innerHTML = `
+            <td class="qty-col">${qty || ""}</td>
+            <td class="desc-col">
+              <span class="item-name">${name}</span>
+              <div class="meta-line">
+                <span class="unit-price">${fmt(unit, currency)}</span>
+                ${code ? `<span class="upc-inline">${code}</span>` : ``}
+              </div>
+            </td>
+            <td class="total-col">${fmt(line, currency)}</td>
+          `;
+          tbody.appendChild(tr);
+        }
       }
 
+      // Descuento & impuesto
+      const descuento = parsePercentOrNumber(descStr, subtotal);
+      const baseImp   = Math.max(subtotal - descuento, 0);
+      const impuesto  = parsePercentOrNumber(itbisStr, baseImp);
+      const grand     = Math.max(baseImp + impuesto, 0);
+
+      // Totales UI
+      setText("subtotal", fmt(subtotal, currency));
+      if (descuento > 0){ show("descuento_line", true); setText("descuento", `- ${fmt(descuento, currency)}`); }
+      if (impuesto  > 0){ show("impuesto_line", true); setText("impuesto", fmt(impuesto, currency)); }
       setText("units", units);
-      setText("grand", "$" + fmt(grand));
+      setText("grand", fmt(grand, currency));
+
+      // Efectivo / cambio
+      if (efectivo > 0){
+        show("efectivo_line", true); setText("efectivo_text", fmt(efectivo, currency));
+        const cambio = Math.max(efectivo - grand, 0);
+        if (cambio >= 0){ show("cambio_line", true); setText("cambio_text", fmt(cambio, currency)); }
+      }
     })();
 
+    // Acciones
     document.getElementById("printBtn").onclick = () => { window.print(); };
 
     document.getElementById("shareBtn").onclick = async () => {
@@ -232,7 +280,14 @@
         const topPad = 3;
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH + topPad + 2] });
-        doc.addImage(imgData, 'PNG', (mmPaperW-mmContentW)/2, topPad, mmContentW, mmContentH);
+
+        // Añadir imagen con compresión rápida para PDFs pequeños
+        doc.addImage(imgData, 'PNG', (mmPaperW-mmContentW)/2, topPad, mmContentW, mmContentH, undefined, 'FAST');
+        doc.setProperties({
+          title: `Ticket ${new Date().toISOString().slice(0,10)}`,
+          subject: 'Ticket 76mm',
+          creator: 'POS Ticket Generator'
+        });
 
         const pdfBlob = doc.output('blob');
         const pdfFile = new File([pdfBlob], 'ticket_brother_76mm.pdf', { type: 'application/pdf' });
