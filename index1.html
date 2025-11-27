@@ -279,32 +279,58 @@
       }
     })();
 
+    /* ============================================================
+       ============   FUNCIÓN SHARE — VERSIÓN FINAL   =============
+       ============================================================ */
+
     document.getElementById("printBtn").onclick = () => { window.print(); };
 
     document.getElementById("shareBtn").onclick = async () => {
       try {
         const ticket = document.getElementById('ticket');
-        const canvas = await html2canvas(ticket, { scale: 4, backgroundColor: '#ffffff', useCORS: true });
-        const imgData = canvas.toDataURL('image/png');
 
+        const canvas = await html2canvas(ticket, {
+          scale: 4,
+          backgroundColor: '#ffffff',
+          useCORS: true
+        });
+
+        const imgData = canvas.toDataURL('image/png');
         const mmPaperW   = ancho;
         const mmContentW = anchoContenido;
-        const mmContentH = mmContentW * (canvas.height / canvas.width);
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH] });
+        const ratio       = canvas.height / canvas.width;
+        const mmContentH = mmContentW * ratio;
 
-        doc.addImage(imgData, 'PNG',
-          (mmPaperW-mmContentW)/2, 0, mmContentW, mmContentH, undefined, 'FAST');
+        const { jsPDF } = window.jspdf;
+
+        // PDF EXACTO AL ANCHO DE LA IMPRESORA
+        const doc = new jsPDF({
+          unit: 'mm',
+          format: [mmPaperW, mmContentH],
+          orientation: 'portrait'
+        });
+
+        // Imagen ocupa TODO el ancho real
+        doc.addImage(
+          imgData,
+          'PNG',
+          (mmPaperW - mmContentW) / 2,
+          0,
+          mmContentW,
+          mmContentH,
+          undefined,
+          'FAST'
+        );
 
         const pdfBlob = doc.output('blob');
-        const fileName = `ticket_brother_${mmPaperW}mm.pdf`;
+        const fileName = `ticket_${mmPaperW}mm.pdf`;
         const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
         if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-          await navigator.share({ 
-            files: [pdfFile], 
-            title: `Ticket ${mmPaperW}mm`, 
-            text: 'Imprimir en Brother RJ-3050Ai' 
+          await navigator.share({
+            files: [pdfFile],
+            title: `Ticket ${mmPaperW}mm`,
+            text: 'Imprimir en Brother RJ-3050Ai'
           });
         } else {
           const url = URL.createObjectURL(pdfBlob);
@@ -317,6 +343,7 @@
           URL.revokeObjectURL(url);
           alert(`Se guardó "${fileName}". Ábrelo en la app de Brother para imprimir.`);
         }
+
       } catch (e) {
         alert('Error al generar PDF: ' + e.message);
       }
