@@ -206,8 +206,6 @@ td{
 
   <div class="totals">
     <div class="total-line"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
-    <div class="total-line" id="descuento_line" style="display:none"><span>Descuento</span><span id="descuento">$0.00</span></div>
-    <div class="total-line" id="impuesto_line" style="display:none"><span>Impuesto</span><span id="impuesto">$0.00</span></div>
     <div class="total-line"><span>Total Unidades</span><span id="units">0</span></div>
     <div class="total-line bold"><span>TOTAL A PAGAR</span><span id="grand">$0.00</span></div>
   </div>
@@ -250,11 +248,8 @@ const q = new URLSearchParams(location.search);
 
 // ANCHO 76/80 mm
 const ancho = (()=>{ const a = parseInt(q.get("ancho")||"80",10); return (a===76||a===80)?a:80; })();
-const anchoContenido = ancho===80 ? 78 : 74;
-
-// Aplicar al CSS
 document.documentElement.style.setProperty("--paper", ancho+"mm");
-document.documentElement.style.setProperty("--w", anchoContenido+"mm");
+document.documentElement.style.setProperty("--w", ancho===80 ? "78mm" : "74mm");
 
 // ==============================
 // LECTURA DE DATOS
@@ -348,7 +343,7 @@ let p_units = splitAny(q.get("p_unit"));
 document.getElementById("printBtn").onclick = () => window.print();
 
 // ==============================
-// ACCIÓN: COMPARTIR / ENVIAR PDF
+// ACCIÓN: COMPARTIR / ENVIAR PDF — FIX PDF BLANCO
 // ==============================
 document.getElementById("shareBtn").onclick = async () => {
   try {
@@ -356,30 +351,26 @@ document.getElementById("shareBtn").onclick = async () => {
 
     const canvas = await html2canvas(ticket, {
       scale: 4,
-      backgroundColor: "#ffffff",
-      useCORS: true
+      useCORS: true,
+      backgroundColor: "#FFFFFF"
     });
 
     const imgData = canvas.toDataURL("image/png");
 
-    // ======================
-    // FIX PARA QUE BROTHER NO REDUZCA EL PDF
-    // ======================
-
     const { jsPDF } = window.jspdf;
 
     const mmPaperW = ancho;
-    const mmContentW = anchoContenido;
-    const mmContentH = mmContentW * (canvas.height / canvas.width);
+    const mmContentW = ancho === 80 ? 78 : 74;
+    const ratio = canvas.height / canvas.width;
+    const mmContentH = mmContentW * ratio;
+    const mmSafeH = Math.ceil(mmContentH + 10);
 
     const doc = new jsPDF({
       unit: "mm",
-      format: [mmPaperW, 0],   // Altura infinita = NO REDUCE
-      compress: false,
-      putOnlyUsedFonts: true
+      format: [mmPaperW, mmSafeH],
+      compress: false
     });
 
-    // Imagen sin shrink
     doc.addImage(
       imgData,
       "PNG",
@@ -388,18 +379,18 @@ document.getElementById("shareBtn").onclick = async () => {
       mmContentW,
       mmContentH,
       undefined,
-      "NONE"
+      "FAST"
     );
 
     const pdfBlob = doc.output("blob");
-    const fileName = `ticket_brother_${mmPaperW}mm.pdf`;
-    const pdfFile = new File([pdfBlob], fileName, { type:"application/pdf" });
+    const fileName = `ticket_${mmPaperW}mm.pdf`;
+    const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
 
-    if(navigator.canShare && navigator.canShare({ files:[pdfFile] })){
+    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
       await navigator.share({
-        files:[pdfFile],
-        title:`Ticket ${mmPaperW}mm`,
-        text:"Imprimir en Brother RJ-3050Ai"
+        files: [pdfFile],
+        title: "Ticket",
+        text: "Listo para imprimir en Brother RJ-3050Ai"
       });
     } else {
       const url = URL.createObjectURL(pdfBlob);
@@ -410,10 +401,10 @@ document.getElementById("shareBtn").onclick = async () => {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      alert(`Se guardó "${fileName}". Ábrelo con Brother iPrint&Label.`);
+      alert("PDF generado. Ábrelo en Brother iPrint&Label.");
     }
 
-  } catch(e){
+  } catch (e) {
     alert("Error al generar PDF: " + e.message);
   }
 };
