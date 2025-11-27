@@ -1,106 +1,202 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Evita que iOS reduzca la impresión -->
+<meta name="x-apple-print-color-adjust" content="exact">
+
+<title>Factura 80mm</title>
+
+<!-- JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
-  @page {
-    size: 80mm auto;
-    margin: 5mm;
-  }
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background: #f0f0f0;
+    }
 
-  body {
-    font-family: monospace;
-    font-size: 10pt;
-    width: 70mm;
-  }
+    #ticket {
+        width: 78mm; /* Contenido a 78mm */
+        padding: 10px;
+        background: white;
+        margin: 0 auto;
+        font-size: 12px;
+        color: #000;
+        font-weight: bold;
+        image-rendering: pixelated;
+    }
 
-  * {
-    page-break-inside: avoid;
-  }
+    h2, h3, p, div, span {
+        color: #000;
+        font-weight: bold !important;
+    }
 
-  .center { text-align: center; }
-  .line { border-bottom: 1px dashed #000; margin: 6px 0; }
+    .btn {
+        display: block;
+        width: 90%;
+        margin: 10px auto;
+        padding: 13px;
+        text-align: center;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        border: none;
+    }
 
-  table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-  td { vertical-align: top; }
+    .btn-green {
+        background: #28a745;
+        color: white;
+    }
 
-  .qty { width: 10mm; }
-  .desc { width: 38mm; }
-  .total { width: 18mm; text-align: right; }
-
+    .btn-blue {
+        background: #007bff;
+        color: white;
+    }
 </style>
 </head>
 
 <body>
 
-<div class="center">
-  <strong>GELLIS DISTRIBUTOR, INC</strong><br>
-  Belleville, NJ 07109<br>
-  Tel: 973-652-5547
+<!-- ----------- FACTURA ----------- -->
+<div id="ticket">
+
+    <h2 style="text-align:center;">GELLIS DISTRIBUTOR, INC</h2>
+    <p style="text-align:center;">Belleville, NJ 07109<br>Tel: 973-652-5547</p>
+
+    <p>Fecha: <span id="fecha"></span></p>
+    <p>Factura No.: <span id="factura"></span></p>
+    <p>Cliente: <span id="cliente"></span></p>
+    <p>Dirección: <span id="direccion"></span></p>
+
+    <h3>Productos</h3>
+    <div id="items"></div>
+
+    <hr>
+
+    <p>Subtotal: $<span id="subtotal"></span></p>
+    <p>Total Unidades: <span id="unidades"></span></p>
+    <p><b>TOTAL A PAGAR: $<span id="total"></span></b></p>
+
+    <p style="text-align:center; margin-top:20px;">¡Gracias por su compra!</p>
+
 </div>
 
-<div class="line"></div>
 
-<strong>Fecha:</strong> <<[FECHA]>> <br>
-<strong>Factura No.:</strong> <<[NFACTURA]>> <br>
-<strong>Cliente:</strong> <<[CLIENTE].[Nombre]>> <br>
-<strong>Dirección:</strong> <<[CLIENTE].[Direccion]>> <br>
-
-<div class="line"></div>
-
-<table>
-  <tr>
-    <td class="qty"><strong>QTY</strong></td>
-    <td class="desc"><strong>DESCRIPCIÓN</strong></td>
-    <td class="total"><strong>TOTAL</strong></td>
-  </tr>
-</table>
-
-<div class="line"></div>
+<!-- ----------- BOTONES ----------- -->
+<button id="print80" class="btn btn-blue">Imprimir (80mm)</button>
+<button id="shareBtn" class="btn btn-green">Compartir / Enviar PDF</button>
 
 
-<!-- LISTA DE PRODUCTOS -->
-<<START: [Related ventas]>>
-<table>
-  <tr>
-    <td class="qty"><<[UDS]>></td>
-    <td class="desc">
-      <<[Descripcion]>> <br>
-      <<[QTY]>> <<[OZ]>> <br>
-      $<<[PRECIO]>> – <<[UPC]>>
-    </td>
-    <td class="total">$<<[TOTAL]>></td>
-  </tr>
-</table>
+<!-- ----------- SCRIPT ----------- -->
+<script>
 
-<div class="line"></div>
-<</END>>
+// ---------------------
+// Cargar datos desde la URL (AppSheet)
+// ---------------------
+const urlParams = new URLSearchParams(window.location.search);
+
+document.getElementById("fecha").textContent    = urlParams.get("fecha")    ?? "";
+document.getElementById("factura").textContent  = urlParams.get("factura")  ?? "";
+document.getElementById("cliente").textContent  = urlParams.get("cliente")  ?? "";
+document.getElementById("direccion").textContent= urlParams.get("direccion")?? "";
+document.getElementById("subtotal").textContent = urlParams.get("subtotal") ?? "";
+document.getElementById("total").textContent    = urlParams.get("total")    ?? "";
+document.getElementById("unidades").textContent = urlParams.get("unidades") ?? "";
+
+// Procesar productos (JSON)
+let items = [];
+try {
+    items = JSON.parse(urlParams.get("items"));
+} catch(e){ items = []; }
+
+let html = "";
+items.forEach(p => {
+    html += `
+        <p>${p.uds} × ${p.descripcion} — $${p.total}<br>
+        ${p.qty} ${p.oz} — UPC: ${p.upc}</p>
+    `;
+});
+document.getElementById("items").innerHTML = html;
 
 
-<!-- TOTALES -->
-<table>
-  <tr>
-    <td><strong>Subtotal</strong></td>
-    <td style="text-align:right;">$<<SUM([Related ventas][TOTAL])>></td>
-  </tr>
+// ---------------------
+// GENERAR PDF 80mm SIN REDUCCIÓN
+// ---------------------
+async function generarPDF(ancho = 80, anchoContenido = 78) {
+    const ticket = document.getElementById("ticket");
 
-  <tr>
-    <td><strong>Total Unidades</strong></td>
-    <td style="text-align:right;"><<SUM([Related ventas][UDS])>></td>
-  </tr>
+    const canvas = await html2canvas(ticket, {
+        scale: 4,
+        useCORS: true
+    });
 
-  <tr>
-    <td><strong>TOTAL A PAGAR</strong></td>
-    <td style="text-align:right;"><strong>$<<SUM([Related ventas][TOTAL])>></strong></td>
-  </tr>
-</table>
+    const imgData = canvas.toDataURL("image/png");
 
-<br><br>
+    // Tamaño papel EXACTO 80mm
+    const mmPaperW   = ancho;
+    const mmContentW = anchoContenido;
 
-<div class="center">
-  ¡Gracias por su compra!
-</div>
+    // Altura dinámica
+    const ratio = canvas.height / canvas.width;
+    const mmContentH = (mmContentW * ratio);
+
+    // Alto seguro para Brother
+    const mmHsafe = Math.ceil(mmContentH + 5);
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF({
+        unit: 'mm',
+        format: [mmPaperW, mmHsafe]
+    });
+
+    // Centrado perfecto sin reducción
+    doc.addImage(
+        imgData,
+        'PNG',
+        (mmPaperW - mmContentW)/2,
+        0,
+        mmContentW,
+        mmContentH,
+        undefined,
+        'FAST'
+    );
+
+    doc.save(`ticket_${mmPaperW}mm.pdf`);
+
+    // Compartir PDF (compatible con Brother)
+    const pdfBlob = doc.output('blob');
+    const pdfFile = new File([pdfBlob], `ticket_${mmPaperW}mm.pdf`, { type: 'application/pdf' });
+
+    if (navigator.share) {
+        navigator.share({
+            files: [pdfFile],
+            title: `Factura 80mm`,
+            text: 'Imprimir con Brother iPrint&Label'
+        });
+    }
+}
+
+
+// ---------------------
+// BOTONES
+// ---------------------
+document.getElementById("print80").addEventListener("click", () => {
+    generarPDF(80, 78);
+});
+
+document.getElementById("shareBtn").addEventListener("click", () => {
+    generarPDF(80, 78);
+});
+
+</script>
 
 </body>
 </html>
