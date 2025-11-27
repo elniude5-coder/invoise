@@ -1,0 +1,96 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+function getParam(name) {
+  const url = new URL(window.location.href);
+  return url.searchParams.get(name) || "";
+}
+
+const boleta      = getParam("boleta");
+const cliente     = getParam("mesa");
+const direccion   = getParam("direccion");
+const fecha       = getParam("fecha");
+const estado      = getParam("estado");
+
+const upcs        = getParam("upcs").split(",");
+const servicios   = getParam("servicios").split(",");
+const cantidades  = getParam("cantidades").split(",");
+const precios     = getParam("p_unit").split(",");
+
+function construirTicket() {
+  let lista = "";
+
+  for (let i = 0; i < servicios.length; i++) {
+    if (servicios[i].trim() === "") continue;
+
+    const cant = cantidades[i] || "1";
+    const desc = servicios[i];
+    const price = precios[i] || "0";
+    const total = (parseFloat(price) * parseFloat(cant)).toFixed(2);
+
+    lista += `
+      <tr>
+        <td>${cant}</td>
+        <td>${desc}</td>
+        <td>${price}</td>
+        <td>${total}</td>
+      </tr>
+    `;
+  }
+
+  document.getElementById("boleta").innerText = boleta;
+  document.getElementById("cliente").innerText = cliente;
+  document.getElementById("direccion").innerText = direccion;
+  document.getElementById("fecha").innerText = fecha;
+  document.getElementById("estado").innerText = estado;
+
+  document.getElementById("lista-productos").innerHTML = lista;
+}
+
+async function autoImprimir() {
+
+  const ticket = document.getElementById("ticket");
+
+  const canvas = await html2canvas(ticket, {
+    scale: 4,
+    backgroundColor: "#ffffff",
+    useCORS: true
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+  const ratio = canvas.height / canvas.width;
+
+  const mmWidth = 80;
+  const mmContent = 72;
+  const mmHeight = mmContent * ratio;
+
+  const { jsPDF } = window.jspdf;
+
+  const doc = new jsPDF({
+    unit: "mm",
+    format: [mmWidth, mmHeight],
+    orientation: "portrait"
+  });
+
+  doc.addImage(
+    imgData,
+    "PNG",
+    (mmWidth - mmContent) / 2,
+    0,
+    mmContent,
+    mmHeight
+  );
+
+  const pdfBlob = doc.output("blob");
+  const pdfURL = URL.createObjectURL(pdfBlob);
+
+  window.location.href =
+    "brother-print://print?file=" + encodeURIComponent(pdfURL);
+}
+
+window.addEventListener("load", () => {
+  construirTicket();
+  setTimeout(autoImprimir, 800);
+});
+</script>
