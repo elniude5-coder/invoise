@@ -1,263 +1,185 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ticket 80 mm — RJ-3050Ai</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ticket 80mm — Brother RJ-3050Ai</title>
 
-  <style>
-    :root {
-      --paper: 80mm;      /* Tamaño real del rollo */
-      --w: 78mm;          /* Área de contenido (máximo) */
-      --font: "Courier New", monospace;
+<style>
+  :root{
+    --paper: 80mm;      /* Tamaño real RJ-3050Ai */
+    --w: 78mm;          /* Contenido casi completo, solo 1mm de margen */
+    --font: "Courier New", ui-monospace, monospace;
 
-      /* Tamaños optimizados */
-      --fs: 3.4mm;
-      --fs-head: 5.2mm;
-      --fs-sub: 3mm;
-      --line: #000;
-    }
+    /* TAMAÑOS DE LETRA MEJORADOS */
+    --fs: 4.2mm;        /* Texto normal */
+    --fs-head: 6mm;     /* Título */
+    --fs-sub: 3.8mm;    /* Subtexto */
+  }
 
-    * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+  *{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #fff;
-      color: #000;
-      font-family: var(--font);
-      font-size: var(--fs);
-      width: var(--paper);
-    }
+  body{
+    margin:0; padding:0; width:var(--paper);
+    font-family:var(--font); color:#000; background:#fff;
+    font-size:var(--fs);
+    font-weight:700;
+  }
 
-    #ticket {
-      width: var(--w);
-      margin: 0 auto;
-      padding: 1.5mm;
-      line-height: 1.15;
-    }
+  #ticket{
+    width:var(--w);
+    max-width:var(--w);
+    margin:0 auto;
+    padding:1mm;
+  }
 
-    .store-header { text-align:center; }
-    .store-title { font-size: var(--fs-head); font-weight:700; margin:1mm 0; }
-    .store-details { font-size: var(--fs-sub); white-space:pre-line; }
+  .store-header{ text-align:center; margin-bottom:2mm; }
+  .store-title{ font-size:var(--fs-head); font-weight:800; margin:1mm 0 0; }
+  .store-details{ font-size:var(--fs-sub); line-height:1.2; }
 
-    .divider {
-      border-top: 0.35mm dashed var(--line);
-      margin: 2mm 0;
-    }
+  .divider{ border-top:.4mm dashed #000; margin:2mm 0; }
 
-    /* Logo */
-    .logo { max-width: 50mm; margin: 0 auto 1mm; display: none; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; }
+  thead th{
+    border-bottom:.4mm solid #000;
+    padding-bottom:1mm;
+    font-size:var(--fs);
+    font-weight:800;
+  }
 
-    /* Tabla de productos */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1mm;
-      table-layout: fixed;
-    }
+  /* COLUMNAS MÁS ANCHAS */
+  .qty-col{ width:12mm; text-align:right; padding-right:1mm; }
+  .desc-col{ width:calc(100% - 12mm - 22mm); }
+  .total-col{ width:22mm; text-align:right; }
 
-    thead th {
-      font-size: var(--fs);
-      border-bottom: 0.35mm solid var(--line);
-      padding-bottom: 1mm;
-    }
+  td{ font-size:var(--fs-sub); padding-top:1mm; }
+  .item-name{ font-size:var(--fs); font-weight:800; display:block; }
+  .meta-line{ font-size:var(--fs-sub); display:flex; justify-content:space-between; }
 
-    .qty-col { width: 12mm; text-align:right; font-weight:700; }
-    .desc-col { width: calc(100% - 12mm - 20mm); padding-left:1mm; }
-    .total-col { width: 20mm; text-align:right; font-weight:700; }
+  /* Totales grandes */
+  .total-line{ display:flex; justify-content:space-between; margin-top:1mm; }
+  .bold span:last-child{
+    font-size:calc(var(--fs) + 1.6mm);
+    font-weight:900;
+  }
 
-    td { padding-top: 1mm; vertical-align: top; }
+  @media print{
+    #uiBtns{ display:none !important; }
+    @page{ size:var(--paper) auto; margin:0; }
+  }
 
-    .item-name { font-size: var(--fs); font-weight:700; }
-    .meta-line { display:flex; justify-content:space-between; font-size: var(--fs-sub); }
-
-    .upc-inline { font-weight:700; }
-
-    .line-row { border-bottom: 0.35mm dashed #000; }
-    .line-row:last-child { border-bottom: none; }
-
-    /* Totales */
-    .totals { margin-top: 2mm; font-size: var(--fs); }
-    .total-line {
-      display:flex;
-      justify-content: space-between;
-      margin-top: 1mm;
-    }
-
-    .total-line.bold span:last-child {
-      font-size: calc(var(--fs) + 1.2mm);
-      font-weight: 800;
-    }
-
-    .footer { text-align:center; margin-top:2mm; font-size: var(--fs-sub); white-space:pre-line; }
-
-    @media print {
-      #uiBtns { display:none !important; }
-      @page { size: var(--paper) auto; margin: 0; }
-    }
-
-    #uiBtns {
-      position: fixed;
-      right: 8px;
-      bottom: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .btn {
-      padding: 6px 10px;
-      border-radius: 6px;
-      background: #fff;
-      border: 1px solid #000;
-      cursor: pointer;
-      font-size: 12px;
-      font-family: var(--font);
-    }
-
-    .btn-green {
-      background: #eaffea;
-      border-color: #0a0;
-      color:#0a0;
-    }
-  </style>
+  #uiBtns{
+    position:fixed; right:10px; bottom:10px; display:flex; flex-direction:column; gap:8px;
+  }
+  .btn{
+    padding:8px 14px; font-size:14px; font-weight:700;
+    border-radius:6px; border:1px solid #000; background:#fff; cursor:pointer;
+  }
+  .btn-green{ color:#080; border-color:#080; background:#eaffea; }
+</style>
 </head>
-
 <body>
-  <div id="ticket">
 
-    <!-- Encabezado -->
-    <div class="store-header">
-      <img id="logo" class="logo" />
-      <div id="store_title" class="store-title"></div>
-      <div id="store_details" class="store-details"></div>
-    </div>
+<div id="ticket">
 
-    <div class="divider"></div>
-
-    <!-- Info -->
-    <div>
-      <div><b>Fecha:</b> <span id="fecha_text"></span></div>
-      <div><b>Factura No.:</b> <span id="factura_text"></span></div>
-      <div id="cliente_wrap" style="display:none;"><b>Cliente:</b> <span id="cliente_text"></span></div>
-      <div id="dir_wrap" style="display:none;"><b>Dirección:</b> <span id="dir_text"></span></div>
-      <div id="pago_wrap" style="display:none;"><b>Pago:</b> <span id="pago_text"></span></div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Tabla productos -->
-    <table>
-      <thead>
-        <tr>
-          <th class="qty-col">QTY</th>
-          <th class="desc-col">DESCRIPCIÓN</th>
-          <th class="total-col">TOTAL</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-
-    <!-- Totales -->
-    <div class="totals">
-      <div class="total-line"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
-      <div class="total-line"><span>Total Unidades</span><span id="units">0</span></div>
-      <div class="total-line bold"><span>TOTAL A PAGAR</span><span id="grand">$0.00</span></div>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="footer" id="footer_text"></div>
-
+  <div class="store-header">
+    <img id="logo" class="logo" style="max-width:45mm; display:none;" />
+    <div id="store_title" class="store-title">Gellis Distributor, Inc</div>
+    <div id="store_details" class="store-details">Belleville, NJ 07109<br>Tel: 973-652-5547</div>
   </div>
 
-  <!-- Botones -->
-  <div id="uiBtns">
-    <button id="printBtn" class="btn">Imprimir</button>
-    <button id="shareBtn" class="btn btn-green">Compartir PDF</button>
+  <div class="divider"></div>
+
+  <div>
+    <b>Fecha:</b> <span id="fecha_text"></span><br>
+    <b>Factura No.:</b> <span id="factura_text"></span><br>
+    <div id="cliente_wrap" style="display:none;"><b>Cliente:</b> <span id="cliente_text"></span></div>
+    <div id="dir_wrap" style="display:none;"><b>Dirección:</b> <span id="dir_text"></span></div>
   </div>
 
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <div class="divider"></div>
 
-  <script>
-    /* ------------ UTILIDADES ------------ */
-    const q = new URLSearchParams(location.search);
-    const fmt = v => "$" + Number(v || 0).toFixed(2);
-    const splitAny = s => String(s || "").split(/[;,]/).map(x=>x.trim()).filter(x=>x);
-    const num = s => parseFloat(String(s||"").replace(/[^0-9.\-]/g,"")) || 0;
+  <table>
+    <thead>
+      <tr>
+        <th class="qty-col">QTY</th>
+        <th class="desc-col">DESCRIPCIÓN</th>
+        <th class="total-col">TOTAL</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
 
-    /* ------------ LECTURA DATOS ------------ */
-    const titulo = q.get("titulo") || "Gellis Distributor, Inc";
-    const detalles = (q.get("detalles") || "Belleville, NJ 07109\nTel: 973-652-5547").replace(/\n/g,"\n");
-    const fecha = q.get("fecha") || new Date().toLocaleDateString();
-    const factura = q.get("boleta") || "-";
-    const nota = q.get("nota") || "¡Gracias por su compra!";
+  <div class="divider"></div>
 
-    const cantidades = splitAny(q.get("cantidades"));
-    const desc = splitAny(q.get("servicios"));
-    const upc = splitAny(q.get("upcs"));
-    const prices = splitAny(q.get("p_unit"));
+  <div class="total-line"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+  <div class="total-line"><span>Total Unidades</span><span id="units">0</span></div>
+  <div class="total-line bold"><span>TOTAL A PAGAR</span><span id="grand">$0.00</span></div>
 
-    /* ------------ RENDER ------------ */
-    document.getElementById("store_title").textContent = titulo;
-    document.getElementById("store_details").textContent = detalles;
-    document.getElementById("fecha_text").textContent = fecha;
-    document.getElementById("factura_text").textContent = factura;
-    document.getElementById("footer_text").textContent = nota;
+  <div class="divider"></div>
+  <div style="text-align:center; font-size:var(--fs-sub);">
+    <span id="nota_text">¡Gracias por su compra!</span>
+  </div>
+</div>
 
-    let subtotal = 0, units = 0;
-    const tbody = document.getElementById("tbody");
+<div id="uiBtns">
+  <button id="printBtn" class="btn">Imprimir</button>
+</div>
 
-    for (let i = 0; i < desc.length; i++) {
-      const qty = num(cantidades[i]);
-      const name = desc[i];
-      const price = num(prices[i]);
-      const code = upc[i] || "";
-      const line = qty * price;
-      if (!qty || !name) continue;
+<script>
+  /* ---------------------------
+     CARGA DE DATOS DESDE LA URL
+     --------------------------- */
+  const q = new URLSearchParams(location.search);
 
-      subtotal += line;
-      units += qty;
+  const titulo = q.get("titulo") || "Gellis Distributor, Inc";
+  const detalles = q.get("detalles") || "Belleville, NJ 07109\nTel: 973-652-5547";
+  const fecha = q.get("fecha") || new Date().toLocaleDateString("en-US");
+  const factura = q.get("boleta") || "-";
 
-      const tr = document.createElement("tr");
-      tr.className = "line-row";
-      tr.innerHTML = `
+  document.getElementById("store_title").textContent = titulo;
+  document.getElementById("store_details").innerHTML = detalles.replace(/\n/g,"<br>");
+  document.getElementById("fecha_text").textContent = fecha;
+  document.getElementById("factura_text").textContent = factura;
+
+  /* ITEMS */
+  const cantidades = (q.get("cantidades") || "").split(";");
+  const desc = (q.get("servicios") || "").split(";");
+  const precios = (q.get("p_unit") || "").split(";");
+
+  const tbody = document.getElementById("tbody");
+  let subtotal = 0, units = 0;
+  const fmt = v => "$" + Number(v).toFixed(2);
+
+  for(let i=0;i<desc.length;i++){
+    const qty = Number(cantidades[i] || 0);
+    const name = desc[i] || "";
+    const price = Number(precios[i] || 0);
+    const total = qty * price;
+
+    if(!qty || !name) continue;
+
+    subtotal += total;
+    units += qty;
+
+    tbody.innerHTML += `
+      <tr>
         <td class="qty-col">${qty}</td>
         <td class="desc-col">
           <span class="item-name">${name}</span>
-          <div class="meta-line">
-            <span>${fmt(price)}</span>
-            ${code ? `<span class="upc-inline">${code}</span>` : ""}
-          </div>
+          <div class="meta-line">${fmt(price)}</div>
         </td>
-        <td class="total-col">${fmt(line)}</td>
-      `;
-      tbody.appendChild(tr);
-    }
+        <td class="total-col">${fmt(total)}</td>
+      </tr>
+    `;
+  }
 
-    document.getElementById("subtotal").textContent = fmt(subtotal);
-    document.getElementById("units").textContent = units;
-    document.getElementById("grand").textContent = fmt(subtotal);
+  document.getElementById("subtotal").textContent = fmt(subtotal);
+  document.getElementById("units").textContent = units;
+  document.getElementById("grand").textContent = fmt(subtotal);
 
-    /* ------------ IMPRESIÓN / PDF ------------ */
-    document.getElementById("printBtn").onclick = () => window.print();
+  document.getElementById("printBtn").onclick = ()=>window.print();
+</script>
 
-    document.getElementById("shareBtn").onclick = async () => {
-      const ticket = document.getElementById("ticket");
-      const canvas = await html2canvas(ticket, { scale: 4 });
-      const img = canvas.toDataURL("image/png");
-
-      const pdf = new jspdf.jsPDF({
-        unit: "mm",
-        format: [80, (canvas.height / canvas.width) * 78]
-      });
-
-      pdf.addImage(img, "PNG", 1, 0, 78, (canvas.height / canvas.width) * 78);
-      pdf.save("ticket_80mm.pdf");
-    };
-  </script>
 </body>
 </html>
