@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ticket 76/80 mm — RJ-3050Ai</title>
+<title>Ticket — Brother RJ-3050Ai</title>
 
 <style>
 :root{
   --paper: 80mm;
   --w: 78mm;
-  --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font: "Courier New", monospace;
   --fs: 3.8mm;
   --fs-head: 6.0mm;
-  --fs-sub: 3.6mm;
+  --fs-sub: 3.5mm;
   --line: #000;
   --pad: 1mm;
 }
@@ -27,7 +27,6 @@ html,body{
   background:#fff;
   font-family:var(--font);
   font-size:var(--fs);
-  font-weight:700;
   width:var(--paper);
 }
 #ticket{
@@ -40,83 +39,65 @@ html,body{
 .store-title{
   font-size:var(--fs-head);
   font-weight:900;
-  margin:.3mm 0 0;
+  margin:0;
   text-transform:uppercase;
 }
 .store-details{
   font-size:var(--fs-sub);
-  line-height:1.15;
-  margin-top:.6mm;
-  font-weight:800;
+  line-height:1.1;
+  margin-top:.5mm;
   word-break:break-word;
-}
-.divider{
-  border-top:.25mm dashed var(--line);
-  margin:1.5mm 0;
 }
 .logo{
   max-width:50mm;
   max-height:18mm;
-  display:block;
   margin:0 auto 1mm;
+  display:none;
+}
+.divider{
+  border-top:.25mm dashed #000;
+  margin:1.5mm 0;
 }
 
 table{
   width:100%;
   border-collapse:collapse;
   table-layout:fixed;
-  margin-top:1mm;
 }
 thead th{
-  text-align:left;
   font-size:var(--fs);
-  border-bottom:.25mm solid var(--line);
-  padding:0 0 .6mm 0;
-  font-weight:900;
+  border-bottom:.25mm solid #000;
+  padding-bottom:.6mm;
 }
 .qty-col{
   width:14mm;
   text-align:right;
-  padding-right:2mm;
-  font-size:calc(var(--fs) + .8mm);
+  padding-right:1mm;
 }
 .desc-col{
   width:calc(100% - 14mm - 18mm);
-  font-weight:800;
 }
 .total-col{
   width:18mm;
   text-align:right;
-  font-weight:900;
 }
 
 td{
-  vertical-align:top;
-  padding-top:.6mm;
+  padding-top:.7mm;
   font-size:var(--fs-sub);
-  line-height:1.15;
 }
-.line-row{border-bottom:.25mm dashed #000;}
-.line-row:last-child{border-bottom:none;}
-
 .item-name{
-  display:block;
-  font-size:calc(var(--fs) + .2mm);
+  font-size:calc(var(--fs) + .5mm);
   font-weight:900;
-  word-break:break-word;
 }
 .meta-line{
   display:flex;
   justify-content:space-between;
+  font-size:var(--fs-sub);
   margin-top:.2mm;
-  gap:2mm;
 }
 .unit-price{font-weight:900;}
-.upc-inline{
-  font-size:var(--fs);
-  font-weight:900;
-  white-space:nowrap;
-}
+.upc-inline{font-weight:900;}
 
 .totals{
   margin-top:2mm;
@@ -129,15 +110,13 @@ td{
   margin-top:1mm;
 }
 .total-line.bold span:last-child{
-  font-size:calc(var(--fs) + 1.4mm);
-  font-weight:900;
+  font-size:calc(var(--fs) + 2mm);
 }
 
 .footer{
   text-align:center;
   margin-top:2mm;
   font-size:var(--fs-sub);
-  word-break:break-word;
 }
 
 @media print{
@@ -150,9 +129,8 @@ td{
   right:8px;
   bottom:8px;
   display:flex;
-  gap:8px;
-  z-index:9999;
   flex-direction:column;
+  gap:8px;
 }
 .btn{
   padding:6px 10px;
@@ -160,13 +138,12 @@ td{
   border:1px solid #000;
   background:#fff;
   cursor:pointer;
-  font-family:var(--font);
   font-size:12px;
   font-weight:700;
 }
 .btn-green{
-  border-color:#0a0;
-  color:#0a0;
+  border-color:#070;
+  color:#070;
   background:#eaffea;
 }
 </style>
@@ -176,9 +153,9 @@ td{
 
 <div id="ticket">
   <div class="store-header">
-    <img id="logo" class="logo" alt="Logo" style="display:none" />
-    <div id="store_title" class="store-title">Gellis Distributor, Inc</div>
-    <div id="store_details" class="store-details">Belleville, NJ 07109<br>Tel: 973-652-5547</div>
+    <img id="logo" class="logo" />
+    <div id="store_title" class="store-title">Tienda</div>
+    <div id="store_details" class="store-details"></div>
   </div>
 
   <div class="divider"></div>
@@ -213,14 +190,14 @@ td{
   <div class="divider"></div>
 
   <div class="footer">
-    <span id="nota_text">¡Gracias por su compra!</span><br>
+    <span id="nota_text"></span><br>
     <span id="estado_text"></span>
   </div>
 </div>
 
 <div id="uiBtns">
   <button id="printBtn" class="btn">Imprimir (AirPrint)</button>
-  <button id="shareBtn" class="btn btn-green">Compartir/Enviar (PDF)</button>
+  <button id="shareBtn" class="btn btn-green">Generar PDF</button>
 </div>
 
 <!-- LIBRERÍAS -->
@@ -228,36 +205,21 @@ td{
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-// ==============================
-// UTILIDADES
-// ==============================
-const fmt = (v, currency) =>
-  `${currency}${Number(v||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-
+const fmt = (v,c)=>`${c}${Number(v||0).toFixed(2)}`;
 const splitAny = s => String(s||"").split(/[;,]/).map(x=>x.trim()).filter(x=>x!=="");
-
-const num = s => {
-  if (!s) return 0;
-  const v = parseFloat(String(s).replace(/[^\d.-]/g,""));
-  return isNaN(v)?0:v;
-};
-
-const setText = (id,val)=>{ const e=document.getElementById(id); if(e) e.textContent=val; };
-const show = (id,v=true)=>{ const e=document.getElementById(id); if(e) e.style.display=v?"block":"none"; };
+const num = s => parseFloat((s||"").replace(/[^\d.-]/g,""))||0;
+const set = (id,val)=>document.getElementById(id).textContent=val;
+const show=(id,v)=>document.getElementById(id).style.display=v?"block":"none";
 
 const q = new URLSearchParams(location.search);
 
-// ANCHO 76/80 mm
-const ancho = (()=>{ const a = parseInt(q.get("ancho")||"80",10); return (a===76||a===80)?a:80; })();
+const ancho = [76,80].includes(parseInt(q.get("ancho"))) ? parseInt(q.get("ancho")) : 80;
 document.documentElement.style.setProperty("--paper", ancho+"mm");
 document.documentElement.style.setProperty("--w", ancho===80 ? "78mm" : "74mm");
 
-// ==============================
-// LECTURA DE DATOS
-// ==============================
-const titulo = q.get("titulo") || "Gellis Distributor, Inc";
-const detalles = q.get("detalles") || "Belleville, NJ 07109\nTel: 973-652-5547";
-const logoUrl = q.get("logo") || "";
+const titulo = q.get("titulo") || "Tienda";
+const detalles = q.get("detalles") || "";
+const logo = q.get("logo") || "";
 const fecha = q.get("fecha") || "";
 const cliente = q.get("cliente") || "";
 const direccion = q.get("direccion") || "";
@@ -265,153 +227,102 @@ const factura = q.get("boleta") || "";
 const pago = q.get("pago") || "";
 const estado = q.get("estado") || "";
 const nota = q.get("nota") || "¡Gracias por su compra!";
-const currency = q.get("moneda") || "$";
+const curr = q.get("moneda") || "$";
 
-let cantidades = splitAny(q.get("cantidades"));
-let descripciones = splitAny(q.get("servicios"));
+let qtys = splitAny(q.get("cantidades"));
+let desc = splitAny(q.get("servicios"));
 let upcs = splitAny(q.get("upcs"));
-let p_units = splitAny(q.get("p_unit"));
+let units = splitAny(q.get("p_unit"));
 
-// ==============================
-// RENDER
-// ==============================
-(function render(){
+document.getElementById("store_title").textContent=titulo;
+document.getElementById("store_details").innerHTML=detalles.replace(/\n/g,"<br>");
 
-  document.getElementById("store_title").textContent = titulo;
-  document.getElementById("store_details").innerHTML = detalles.replace(/\n/g,"<br>");
+if(logo){
+  const img=document.getElementById("logo");
+  img.src=logo;
+  img.style.display="block";
+}
 
-  if(logoUrl){
-    const img=document.getElementById("logo");
-    img.src = logoUrl;
-    img.style.display="block";
+set("fecha_text",fecha);
+set("factura_text",factura);
+
+if(cliente){ show("cliente_wrap",true); set("cliente_text",cliente); }
+if(direccion){ show("dir_wrap",true); set("dir_text",direccion); }
+if(pago){ show("pago_wrap",true); set("pago_text",pago); }
+
+set("estado_text",estado);
+set("nota_text",nota);
+
+const tbody=document.getElementById("tbody");
+let totalUnits=0;
+let subtotal=0;
+
+for(let i=0;i<desc.length;i++){
+  const qv=num(qtys[i]);
+  const nm=desc[i];
+  const up=upcs[i]||"";
+  const pu=num(units[i]);
+
+  if(qv>0 && nm){
+    const line = qv*pu;
+    subtotal+=line;
+    totalUnits+=qv;
+
+    const tr=document.createElement("tr");
+    tr.innerHTML = `
+      <td class="qty-col">${qv}</td>
+      <td class="desc-col">
+        <div class="item-name">${nm}</div>
+        <div class="meta-line">
+          <span>${fmt(pu,curr)}</span>
+          ${up?`<span class="upc-inline">${up}</span>`:""}
+        </div>
+      </td>
+      <td class="total-col">${fmt(line,curr)}</td>
+    `;
+    tbody.appendChild(tr);
   }
+}
 
-  setText("fecha_text", fecha);
-  setText("factura_text", factura);
+set("subtotal",fmt(subtotal,curr));
+set("units",totalUnits);
+set("grand",fmt(subtotal,curr));
 
-  if(cliente){ show("cliente_wrap",true); setText("cliente_text",cliente); }
-  if(direccion){ show("dir_wrap",true); setText("dir_text",direccion); }
-  if(pago){ show("pago_wrap",true); setText("pago_text",pago); }
+document.getElementById("printBtn").onclick=()=>window.print();
 
-  setText("estado_text", estado);
-  setText("nota_text", nota);
+document.getElementById("shareBtn").onclick=async()=>{
+  const ticket=document.getElementById("ticket");
+  const canvas=await html2canvas(ticket,{scale:4});
+  const img=canvas.toDataURL("image/png");
+  const {jsPDF}=window.jspdf;
 
-  const tbody = document.getElementById("tbody");
-  tbody.innerHTML="";
+  const W=ancho;
+  const contentW = ancho===80?78:74;
+  const ratio = canvas.height/canvas.width;
+  const contentH = contentW*ratio;
 
-  let units = 0;
-  let subtotal = 0;
+  const doc=new jsPDF({
+    unit:"mm",
+    format:[W, 200],
+    compress:false
+  });
 
-  const n = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
+  doc.addImage(img,"PNG",(W-contentW)/2,2,contentW,contentH,"","FAST");
 
-  for(let i=0;i<n;i++){
-    const qty = num(cantidades[i]);
-    const name = descripciones[i] || "";
-    const unit = num(p_units[i]);
-    const code = upcs[i] || "";
-    const line = qty * unit;
+  const blob=doc.output("blob");
+  const file=new File([blob],"ticket.pdf",{type:"application/pdf"});
 
-    if(qty>0 && name){
-      units += qty;
-      subtotal += line;
-
-      const tr = document.createElement("tr");
-      tr.className="line-row";
-
-      tr.innerHTML = `
-        <td class="qty-col">${qty}</td>
-        <td class="desc-col">
-          <span class="item-name">${name}</span>
-          <div class="meta-line">
-            <span class="unit-price">${fmt(unit,currency)}</span>
-            ${code ? `<span class="upc-inline">${code}</span>` : ""}
-          </div>
-        </td>
-        <td class="total-col">${fmt(line,currency)}</td>
-      `;
-      tbody.appendChild(tr);
-    }
-  }
-
-  setText("subtotal", fmt(subtotal,currency));
-  setText("units", units);
-  setText("grand", fmt(subtotal,currency));
-})();
-
-// ==============================
-// ACCIÓN: IMPRESIÓN
-// ==============================
-document.getElementById("printBtn").onclick = () => window.print();
-
-// ==============================
-// ACCIÓN: PDF — FIX COMPLETO PARA BROTHER
-// ==============================
-document.getElementById("shareBtn").onclick = async () => {
-  try {
-    const ticket = document.getElementById("ticket");
-
-    const canvas = await html2canvas(ticket, {
-      scale: 4,
-      useCORS: true,
-      backgroundColor: "#FFFFFF"
-    });
-
-    const imgData = canvas.toDataURL("image/png");
-
-    const { jsPDF } = window.jspdf;
-
-    // ---- CONFIGURACIÓN FIJA RJ-3050Ai ----
-    const mmPaperW = ancho;          // 76 o 80 mm
-    const mmContentW = mmPaperW === 80 ? 78 : 74;
-    const mmPaperH = 200;            // altura fija estable (puedes subir si deseas)
-
-    const ratio = canvas.height / canvas.width;
-    const mmContentH = mmContentW * ratio;
-
-    const doc = new jsPDF({
-      unit: "mm",
-      format: [mmPaperW, mmPaperH],
-      compress: false
-    });
-
-    doc.addImage(
-      imgData,
-      "PNG",
-      (mmPaperW - mmContentW) / 2,
-      2,
-      mmContentW,
-      mmContentH,
-      undefined,
-      "FAST"
-    );
-
-    const pdfBlob = doc.output("blob");
-    const fileName = `ticket_${mmPaperW}mm.pdf`;
-    const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
-
-    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-      await navigator.share({
-        files: [pdfFile],
-        title: "Ticket",
-        text: "Listo para imprimir en Brother RJ-3050Ai"
-      });
-    } else {
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      alert("PDF generado. Listo para imprimir.");
-    }
-
-  } catch (e) {
-    alert("Error al generar PDF: " + e.message);
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    await navigator.share({files:[file],title:"Ticket"});
+  }else{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url; a.download="ticket.pdf"; a.click();
+    URL.revokeObjectURL(url);
   }
 };
 </script>
 
 </body>
 </html>
+
