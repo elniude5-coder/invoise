@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 
 <style>
-  /* CONFIGURACIÓN PARA ROLLO BROTHER RJ-3050Ai (80mm) */
   @page {
     size: 80mm auto;
     margin: 5mm;
@@ -13,46 +12,22 @@
   body {
     font-family: monospace;
     font-size: 10pt;
-    width: 70mm; /* IMPORTANTE: deja espacio para márgenes */
+    width: 70mm;
   }
 
   * {
     page-break-inside: avoid;
   }
 
-  .center {
-    text-align: center;
-  }
+  .center { text-align: center; }
+  .line { border-bottom: 1px dashed #000; margin: 6px 0; }
 
-  .line {
-    border-bottom: 1px dashed #000;
-    margin: 6px 0;
-  }
+  table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  td { vertical-align: top; }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 10pt;
-  }
-
-  td {
-    vertical-align: top;
-  }
-
-  .qty {
-    width: 10mm;
-    text-align: left;
-  }
-
-  .desc {
-    width: 40mm;
-    text-align: left;
-  }
-
-  .total {
-    width: 20mm;
-    text-align: right;
-  }
+  .qty { width: 10mm; }
+  .desc { width: 38mm; }
+  .total { width: 18mm; text-align: right; }
 
 </style>
 </head>
@@ -84,14 +59,16 @@
 
 <div class="line"></div>
 
+
+<!-- LISTA DE PRODUCTOS -->
 <<START: [Related ventas]>>
 <table>
   <tr>
     <td class="qty"><<[UDS]>></td>
     <td class="desc">
       <<[Descripcion]>> <br>
-      <<[QTY]>>  <<[OZ]>> <br>
-      $<<[PRECIO]>>  <<[UPC]>>
+      <<[QTY]>> <<[OZ]>> <br>
+      $<<[PRECIO]>> – <<[UPC]>>
     </td>
     <td class="total">$<<[TOTAL]>></td>
   </tr>
@@ -100,8 +77,8 @@
 <div class="line"></div>
 <</END>>
 
-<br>
 
+<!-- TOTALES -->
 <table>
   <tr>
     <td><strong>Subtotal</strong></td>
@@ -122,7 +99,7 @@
 <br><br>
 
 <div class="center">
-  ¡Gracias por su compra!<br>
+  ¡Gracias por su compra!
 </div>
 
 </body>
