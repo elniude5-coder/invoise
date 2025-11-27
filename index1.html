@@ -1,96 +1,343 @@
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket 76/80 mm — RJ-3050Ai</title>
+  <style>
 
-<script>
-function getParam(name) {
-  const url = new URL(window.location.href);
-  return url.searchParams.get(name) || "";
-}
+    @page { size: 80mm auto; margin: 0; }    
+    body, html { margin: 0 !important; padding: 0 !important; }
 
-const boleta      = getParam("boleta");
-const cliente     = getParam("mesa");
-const direccion   = getParam("direccion");
-const fecha       = getParam("fecha");
-const estado      = getParam("estado");
+    table, tr, td, tbody, thead, .line-row, .item-name, .meta-line {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
 
-const upcs        = getParam("upcs").split(",");
-const servicios   = getParam("servicios").split(",");
-const cantidades  = getParam("cantidades").split(",");
-const precios     = getParam("p_unit").split(",");
+    :root{
+      --paper: 80mm;
+      --w: 78mm;
+      --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-function construirTicket() {
-  let lista = "";
+      --fs: 3.8mm;
+      --fs-head: 6.0mm;
+      --fs-sub: 3.6mm;
+      --line: #000;
+      --pad: 1mm;
+    }
 
-  for (let i = 0; i < servicios.length; i++) {
-    if (servicios[i].trim() === "") continue;
+    *{ box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #000 !important; }
+    html, body{
+      margin:0; padding:0; background:#fff; color:#000;
+      font-family:var(--font);
+      font-size:var(--fs);
+      font-weight:700;
+      width: var(--paper);
+    }
 
-    const cant = cantidades[i] || "1";
-    const desc = servicios[i];
-    const price = precios[i] || "0";
-    const total = (parseFloat(price) * parseFloat(cant)).toFixed(2);
+    #ticket{
+      width: var(--w);
+      max-width: var(--w);
+      padding: var(--pad);
+      margin: 0 auto;
+      font-weight:700;
+      color:#000;
+    }
 
-    lista += `
-      <tr>
-        <td>${cant}</td>
-        <td>${desc}</td>
-        <td>${price}</td>
-        <td>${total}</td>
-      </tr>
-    `;
-  }
+    .store-header{ text-align:center; margin-bottom: 2mm; }
+    .store-title{ font-size: var(--fs-head); font-weight:900; margin: .3mm 0 0; text-transform: uppercase; letter-spacing:.15mm; color:#000; }
+    .store-details{ font-size: var(--fs-sub); line-height:1.15; margin-top:.6mm; font-weight:800; word-break: break-word; color:#000; }
+    .divider{ border-top:.25mm dashed var(--line); margin: 1.5mm 0; }
 
-  document.getElementById("boleta").innerText = boleta;
-  document.getElementById("cliente").innerText = cliente;
-  document.getElementById("direccion").innerText = direccion;
-  document.getElementById("fecha").innerText = fecha;
-  document.getElementById("estado").innerText = estado;
+    .logo{ max-width: 50mm; max-height: 18mm; display:block; margin: 0 auto 1mm; }
 
-  document.getElementById("lista-productos").innerHTML = lista;
-}
+    table{ width:100%; border-collapse: collapse; table-layout: fixed; margin-top:1mm; color:#000; }
+    thead th{
+      text-align:left; font-size: var(--fs); color:#000;
+      border-bottom: .25mm solid var(--line);
+      padding: 0 0 .6mm 0;
+      font-weight:900;
+    }
 
-async function autoImprimir() {
+    .qty-col{ width: 14mm; text-align: right; padding-right: 2mm; font-size: calc(var(--fs) + 0.8mm); font-weight:900; }
+    .desc-col{ width: calc(100% - 14mm - 18mm); padding-left: 0; font-weight:800; }
+    .total-col{ width: 18mm; text-align: right; font-weight:900; }
+    thead .desc-col{ padding-left: 4mm; }
 
-  const ticket = document.getElementById("ticket");
+    td{ vertical-align: top; padding-top: .6mm; font-size: var(--fs-sub); line-height: 1.15; font-weight:800; color:#000; }
+    .line-row{ border-bottom:.25mm dashed #000; }
+    .line-row:last-child{ border-bottom: none; }
 
-  const canvas = await html2canvas(ticket, {
-    scale: 4,
-    backgroundColor: "#ffffff",
-    useCORS: true
-  });
+    .item-name{ display:block; font-size: calc(var(--fs) + 0.2mm); font-weight:900; word-break: break-word; color:#000; }
+    .meta-line{ display:flex; justify-content: space-between; align-items: baseline; margin-top:.2mm; gap: 2mm; font-weight:800; color:#000; }
+    .unit-price{ font-weight:900; white-space: nowrap; color:#000; }
+    .upc-inline{ font-size: var(--fs); font-weight:900; color:#000; white-space: nowrap; }
 
-  const imgData = canvas.toDataURL("image/png");
-  const ratio = canvas.height / canvas.width;
+    .totals{ margin-top: 2mm; font-size: var(--fs); font-weight:900; color:#000; }
+    .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; font-weight:900; color:#000; }
+    .muted{ opacity:.95; font-weight:800; color:#000; }
+    .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1.4mm); font-weight:900; }
 
-  const mmWidth = 80;
-  const mmContent = 72;
-  const mmHeight = mmContent * ratio;
+    .footer{ text-align:center; margin-top: 2mm; font-size: var(--fs-sub); font-weight:800; word-break: break-word; color:#000; }
 
-  const { jsPDF } = window.jspdf;
+    @media print{
+      #uiBtns{ display:none !important; }
+      @page{ size: var(--paper) auto; margin: 0; }
+      body{ background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
 
-  const doc = new jsPDF({
-    unit: "mm",
-    format: [mmWidth, mmHeight],
-    orientation: "portrait"
-  });
+    #uiBtns{ position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999; flex-direction: column; }
+    .btn{ padding:6px 10px; border-radius:6px; border:1px solid #000; background:#fff; color:#000; cursor:pointer; font-family: var(--font); font-size: 12px; font-weight:700; }
+    .btn-green{ border-color:#0a0; color:#0a0; background:#eaffea; }
 
-  doc.addImage(
-    imgData,
-    "PNG",
-    (mmWidth - mmContent) / 2,
-    0,
-    mmContent,
-    mmHeight
-  );
+  </style>
+</head>
 
-  const pdfBlob = doc.output("blob");
-  const pdfURL = URL.createObjectURL(pdfBlob);
+<body>
+  <div id="ticket">
+    <div class="store-header">
+      <img id="logo" class="logo" alt="Logo" style="display:none" />
+      <div id="store_title" class="store-title">Gellis Distributor, Inc</div>
+      <div class="store-details" id="store_details">Belleville, NJ 07109<br>Tel: 973-652-5547</div>
+    </div>
 
-  window.location.href =
-    "brother-print://print?file=" + encodeURIComponent(pdfURL);
-}
+    <div class="divider"></div>
 
-window.addEventListener("load", () => {
-  construirTicket();
-  setTimeout(autoImprimir, 800);
-});
-</script>
+    <div>
+      <div><b>Fecha:</b> <span id="fecha_text"></span></div>
+      <div><b>Factura No.:</b> <span id="factura_text"></span></div>
+      <div id="cliente_wrap" style="display:none;"><b>Cliente:</b> <span id="cliente_text"></span></div>
+      <div id="dir_wrap" style="display:none;"><b>Dirección:</b> <span id="dir_text"></span></div>
+      <div id="pago_wrap" style="display:none;"><b>Pago:</b> <span id="pago_text"></span></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="qty-col">QTY</th>
+          <th class="desc-col">DESCRIPCIÓN</th>
+          <th class="total-col">TOTAL</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <div class="totals">
+      <div class="total-line"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+      <div class="total-line muted" id="descuento_line" style="display:none"><span>Descuento</span><span id="descuento">-$0.00</span></div>
+      <div class="total-line muted" id="impuesto_line" style="display:none"><span>Impuesto</span><span id="impuesto">$0.00</span></div>
+      <div class="total-line"><span>Total Unidades</span><span id="units">0</span></div>
+      <div class="total-line bold"><span>TOTAL A PAGAR</span><span id="grand">$0.00</span></div>
+      <div class="total-line" id="efectivo_line" style="display:none"><span>Efectivo</span><span id="efectivo_text">$0.00</span></div>
+      <div class="total-line" id="cambio_line" style="display:none"><span>Cambio</span><span id="cambio_text">$0.00</span></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="footer">
+      <span id="nota_text">¡Gracias por su compra!</span><br>
+      <span id="estado_text"></span>
+    </div>
+  </div>
+
+  <div id="uiBtns">
+    <button id="printBtn" class="btn">Imprimir (AirPrint)</button>
+    <button id="shareBtn" class="btn btn-green">Compartir/Enviar (PDF)</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script>
+
+    const fmt = (v, currency) => `${currency}${Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    const splitAny = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
+    const num = s => { if (s == null) return 0; const n = parseFloat(String(s).replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const show = (id, v=true) => { const el = document.getElementById(id); el.style.display = v ? "block" : "none"; };
+
+    const q = new URLSearchParams(location.search);
+
+    const ancho = (()=>{ const a = parseInt(q.get('ancho')||'80',10); return (a===76||a===80)?a:80; })();
+    const anchoContenido = ancho===80 ? 78 : 74;
+
+    const root = document.documentElement;
+    root.style.setProperty('--paper', ancho+'mm');
+    root.style.setProperty('--w', anchoContenido+'mm');
+
+    const formatUSDate = (input) => {
+      if (!input) return new Intl.DateTimeFormat('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}).format(new Date());
+      const s = String(input).trim();
+      let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+      if (m) return `${m[2].padStart(2,'0')}/${m[3].padStart(2,'0')}/${m[1]}`;
+      m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+      if (m){
+        const d=+m[1], mo=+m[2], y=m[3].length===2?`20${m[3]}`:m[3];
+        if(d>12&&mo<=12) return `${mo.toString().padStart(2,'0')}/${d.toString().padStart(2,'0')}/${y}`;
+        return `${m[1].padStart(2,'0')}/${m[2].padStart(2,'0')}/${y}`;
+      }
+      return new Intl.DateTimeFormat('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}).format(new Date());
+    };
+
+    const titulo    = q.get("titulo")      || "Gellis Distributor, Inc";
+    const detalles  = q.get("detalles")    || "Belleville, NJ 07109\nTel: 973-652-5547";
+    const logoUrl   = q.get("logo")        || "";
+
+    const boleta    = q.get("boleta")      || "";
+    const mesa      = q.get("mesa")        || "";
+    const direccion = q.get("direccion")   || "";
+    const fecha     = formatUSDate(q.get("fecha"));
+    const estado    = q.get("estado")      || "";
+    const nota      = q.get("nota")        || "¡Gracias por su compra!";
+
+    const pago      = q.get("pago")        || "";
+    const efectivo  = num(q.get("efectivo"));
+
+    const currency  = q.get("moneda")      || "$";
+    const descStr   = q.get("descuento")   || "";
+    const itbisStr  = q.get("itbis")       || "";
+
+    let cantidades    = splitAny(q.get("cantidades"));
+    let descripciones = splitAny(q.get("servicios"));
+    let upcs          = splitAny(q.get("upcs"));
+    let p_units       = splitAny(q.get("p_unit"));
+
+    const parsePercentOrNumber = (s, base=0) => {
+      if (!s) return 0;
+      const str = String(s).trim();
+      if (/%$/.test(str)) { const p = num(str.replace(/%/,"")); return base * (p/100); }
+      const val = num(str);
+      if (val > 0 && val < 1 && base > 0) return base * val;
+      return val;
+    };
+
+    (function render(){
+      document.getElementById("store_title").textContent = titulo;
+      document.getElementById("store_details").innerHTML = (detalles || "").replace(/\n/g,"<br>");
+      if (logoUrl){ const img = document.getElementById("logo"); img.src = logoUrl; img.style.display = "block"; }
+
+      setText("fecha_text", fecha);
+      setText("factura_text", boleta || "-");
+      if (mesa){ show("cliente_wrap", true); setText("cliente_text", mesa); }
+      if (direccion){ show("dir_wrap", true);  setText("dir_text", direccion); }
+      if (pago){ show("pago_wrap", true); setText("pago_text", pago); }
+      setText("estado_text", estado);
+      setText("nota_text", nota);
+
+      const tbody = document.getElementById("tbody"); 
+      tbody.innerHTML = "";
+      let units = 0, subtotal = 0;
+      const n = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
+
+      for (let i=0; i<n; i++){
+        const qty  = num(cantidades[i]);
+        const name = descripciones[i] || "";
+        const unit = num(p_units[i]);
+        const code = upcs[i] || "";
+        const line = qty * unit;
+
+        if (qty > 0 && name){
+          units += qty; subtotal += line;
+          const tr = document.createElement("tr");
+          tr.className = "line-row";
+          tr.innerHTML = `
+            <td class="qty-col">${qty}</td>
+            <td class="desc-col">
+              <span class="item-name">${name}</span>
+              <div class="meta-line">
+                <span class="unit-price">${fmt(unit, currency)}</span>
+                ${code ? `<span class="upc-inline">${code}</span>` : ``}
+              </div>
+            </td>
+            <td class="total-col">${fmt(line, currency)}</td>`;
+          tbody.appendChild(tr);
+        }
+      }
+
+      const descuento = parsePercentOrNumber(descStr, subtotal);
+      const baseImp   = Math.max(subtotal - descuento, 0);
+      const impuesto  = parsePercentOrNumber(itbisStr, baseImp);
+      const grand     = Math.max(baseImp + impuesto, 0);
+
+      setText("subtotal", fmt(subtotal, currency));
+      if (descuento > 0){ show("descuento_line", true); setText("descuento", `- ${fmt(descuento, currency)}`); }
+      if (impuesto  > 0){ show("impuesto_line", true);  setText("impuesto", fmt(impuesto, currency)); }
+      setText("units", units);
+      setText("grand", fmt(grand, currency));
+
+      if (efectivo > 0){
+        show("efectivo_line", true); setText("efectivo_text", fmt(efectivo, currency));
+        const cambio = Math.max(efectivo - grand, 0);
+        show("cambio_line", true); setText("cambio_text", fmt(cambio, currency));
+      }
+    })();
+
+    document.getElementById("printBtn").onclick = () => { window.print(); };
+
+    document.getElementById("shareBtn").onclick = async () => {
+      try {
+        const ticket = document.getElementById('ticket');
+
+        const canvas = await html2canvas(ticket, {
+          scale: 4,
+          backgroundColor: '#ffffff',
+          useCORS: true
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const mmPaperW   = ancho;
+        const mmContentW = anchoContenido;
+        const ratio       = canvas.height / canvas.width;
+        const mmContentH = mmContentW * ratio;
+
+        const { jsPDF } = window.jspdf;
+
+        const doc = new jsPDF({
+          unit: 'mm',
+          format: [mmPaperW, mmContentH],
+          orientation: 'portrait'
+        });
+
+        doc.addImage(
+          imgData,
+          'PNG',
+          (mmPaperW - mmContentW) / 2,
+          0,
+          mmContentW,
+          mmContentH,
+          undefined,
+          'FAST'
+        );
+
+        const pdfBlob = doc.output('blob');
+        const fileName = `ticket_${mmPaperW}mm.pdf`;
+        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+          await navigator.share({
+            files: [pdfFile],
+            title: `Ticket ${mmPaperW}mm`,
+            text: 'Imprimir en Brother RJ-3050Ai'
+          });
+        } else {
+          const url = URL.createObjectURL(pdfBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          alert(`Se guardó "${fileName}". Ábrelo en la app de Brother para imprimir.`);
+        }
+
+      } catch (e) {
+        alert('Error al generar PDF: ' + e.message);
+      }
+    };
+
+  </script>
+
+</body>
+</html> agrega todo a este codigo
