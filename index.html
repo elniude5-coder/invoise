@@ -1,30 +1,106 @@
-<!-- Botón para imprimir con Brother -->
-<button id="btnBrother" 
-        style="width:100%;padding:12px;background:#007bff;color:white;border:none;border-radius:6px;font-size:18px;margin-top:20px;">
-    Imprimir en Brother
-</button>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Ticket POS</title>
+
+<style>
+body {
+    font-family: monospace;
+    padding: 20px;
+}
+#ticket {
+    width: 300px;
+    border: 1px solid #ccc;
+    padding: 15px;
+}
+.item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+.title {
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+</style>
+
+</head>
+<body>
+
+<div id="ticket">
+    <div class="title">RECIBO</div>
+    <div><b>Factura:</b> <span id="boleta"></span></div>
+    <div><b>Cliente:</b> <span id="cliente"></span></div>
+    <div><b>Dirección:</b> <span id="direccion"></span></div>
+    <div><b>Fecha:</b> <span id="fecha"></span></div>
+    <hr>
+
+    <div id="items"></div>
+
+    <hr>
+    <div><b>Total:</b> <span id="total"></span></div>
+</div>
 
 <script>
-// Cuando se genere el PDF, lo guardamos en una variable
-let pdfURL = "";
-
-// Sobreescribimos la función que genera el PDF (si ya existe)
-function generarPDF_Final(url) {
-    pdfURL = url;
-    console.log("PDF listo:", pdfURL);
+// -----------------------------
+// 1) Leer parámetros URL
+// -----------------------------
+function getParam(name) {
+    return new URLSearchParams(window.location.search).get(name) || "";
 }
 
-// Evento del botón
-document.getElementById("btnBrother").addEventListener("click", () => {
-    if (!pdfURL || pdfURL === "") {
-        alert("El PDF todavía no está listo.");
-        return;
-    }
+const boleta     = getParam("boleta");
+const cliente    = getParam("cliente");
+const direccion  = getParam("direccion");
+const fecha      = getParam("fecha");
 
-    // Abrir Impresora Brother
-    const brotherURL = `brother-print://print?file=${encodeURIComponent(pdfURL)}`;
-    console.log("Enviando a Brother:", brotherURL);
+const upcs       = getParam("upcs").split(",");
+const nombres    = getParam("servicios").split(",");
+const cantidades = getParam("cantidades").split(",");
+const precios    = getParam("p_unit").split(",");
 
-    window.location.href = brotherURL;
-});
+// -----------------------------
+// 2) Insertar datos en HTML
+// -----------------------------
+document.getElementById("boleta").textContent = boleta;
+document.getElementById("cliente").textContent = cliente;
+document.getElementById("direccion").textContent = direccion;
+document.getElementById("fecha").textContent = fecha;
+
+let totalFinal = 0;
+let itemsHtml = "";
+
+for (let i = 0; i < upcs.length; i++) {
+    const cant = parseFloat(cantidades[i]) || 0;
+    const precio = parseFloat(precios[i]) || 0;
+    const total = cant * precio;
+    totalFinal += total;
+
+    itemsHtml += `
+        <div class="item">
+            <span>${cant} x ${nombres[i]}</span>
+            <span>${total.toFixed(2)}</span>
+        </div>
+    `;
+}
+
+document.getElementById("items").innerHTML = itemsHtml;
+document.getElementById("total").textContent = totalFinal.toFixed(2);
+
+// -----------------------------
+// 3) AUTO-IMPRIMIR en Brother
+// -----------------------------
+setTimeout(() => {
+    const contenido = document.getElementById("ticket").innerText;
+
+    // ⚠️ Reemplazar por el esquema real de Brother
+    window.location.href = "brotherprint://print?data=" + encodeURIComponent(contenido);
+
+}, 1000);
 </script>
+
+</body>
+</html>
