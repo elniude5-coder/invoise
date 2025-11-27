@@ -6,19 +6,13 @@
   <title>Ticket 76/80 mm — RJ-3050Ai</title>
   <style>
 
-    /* ====== FIX DEFINITIVO PARA EVITAR CORTES DE PÁGINA ====== */
-    @page { size: 80mm auto; margin: 0; }
-
-    body, html { 
-      margin: 0 !important; 
-      padding: 0 !important; 
-    }
+    @page { size: 80mm auto; margin: 0; }    
+    body, html { margin: 0 !important; padding: 0 !important; }
 
     table, tr, td, tbody, thead, .line-row, .item-name, .meta-line {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
-    /* ========================================================= */
 
     :root{
       --paper: 80mm;
@@ -279,10 +273,6 @@
       }
     })();
 
-    /* ============================================================
-       ============   FUNCIÓN SHARE — VERSIÓN FINAL   =============
-       ============================================================ */
-
     document.getElementById("printBtn").onclick = () => { window.print(); };
 
     document.getElementById("shareBtn").onclick = async () => {
@@ -303,14 +293,12 @@
 
         const { jsPDF } = window.jspdf;
 
-        // PDF EXACTO AL ANCHO DE LA IMPRESORA
         const doc = new jsPDF({
           unit: 'mm',
           format: [mmPaperW, mmContentH],
           orientation: 'portrait'
         });
 
-        // Imagen ocupa TODO el ancho real
         doc.addImage(
           imgData,
           'PNG',
