@@ -2,15 +2,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
-// =========================
-// 1. Leer parámetros URL
-// =========================
 function getParam(name) {
   const url = new URL(window.location.href);
   return url.searchParams.get(name) || "";
 }
 
-// Recibir datos de AppSheet
 const boleta      = getParam("boleta");
 const cliente     = getParam("mesa");
 const direccion   = getParam("direccion");
@@ -22,11 +18,7 @@ const servicios   = getParam("servicios").split(",");
 const cantidades  = getParam("cantidades").split(",");
 const precios     = getParam("p_unit").split(",");
 
-// =========================
-// 2. Construir ticket HTML
-// =========================
 function construirTicket() {
-
   let lista = "";
 
   for (let i = 0; i < servicios.length; i++) {
@@ -56,9 +48,6 @@ function construirTicket() {
   document.getElementById("lista-productos").innerHTML = lista;
 }
 
-// =========================
-// 3. AUTO-IMPRIMIR BROTHER
-// =========================
 async function autoImprimir() {
 
   const ticket = document.getElementById("ticket");
@@ -72,8 +61,8 @@ async function autoImprimir() {
   const imgData = canvas.toDataURL("image/png");
   const ratio = canvas.height / canvas.width;
 
-  const mmWidth = 80;      // Ancho rollo
-  const mmContent = 72;    // Contenido centrado
+  const mmWidth = 80;
+  const mmContent = 72;
   const mmHeight = mmContent * ratio;
 
   const { jsPDF } = window.jspdf;
@@ -90,26 +79,18 @@ async function autoImprimir() {
     (mmWidth - mmContent) / 2,
     0,
     mmContent,
-    mmHeight,
-    undefined,
-    "FAST"
+    mmHeight
   );
 
   const pdfBlob = doc.output("blob");
   const pdfURL = URL.createObjectURL(pdfBlob);
 
-  // LANZAR Brother automáticamente
   window.location.href =
     "brother-print://print?file=" + encodeURIComponent(pdfURL);
 }
 
-// =========================
-// 4. Inicializar
-// =========================
-window.addEventListener("load", async () => {
+window.addEventListener("load", () => {
   construirTicket();
-  setTimeout(() => {
-    autoImprimir();
-  }, 800); // pequeña espera para cargar fuentes
+  setTimeout(autoImprimir, 800);
 });
 </script>
