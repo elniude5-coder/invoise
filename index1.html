@@ -349,79 +349,11 @@ document.getElementById("shareBtn").onclick = async () => {
   try {
     const ticket = document.getElementById("ticket");
 
-    // Renderizado nítido sin compresión
     const canvas = await html2canvas(ticket, {
       scale: 4,
       useCORS: true,
       backgroundColor: "#FFFFFF"
     });
-
-    const imgData = canvas.toDataURL("image/png");
-
-    const { jsPDF } = window.jspdf;
-
-    // Ancho real del rollo
-    const mmPaperW = ancho;                 // 80mm o 76mm
-    const mmContentW = ancho === 80 ? 78 : 74;
-
-    // Proporción original del canvas (mantiene tamaño real)
-    const ratio = canvas.height / canvas.width;
-    const mmContentH = mmContentW * ratio;
-
-    // Margen extra para evitar "corte" en Brother
-    const mmSafeH = Math.ceil(mmContentH + 10);
-
-    // PDF exacto a tamaño real del ticket
-    const doc = new jsPDF({
-      unit: "mm",
-      format: [mmPaperW, mmSafeH],
-      compress: false,
-      putOnlyUsedFonts: true
-    });
-
-    // Imagen centrada y sin reducción
-    doc.addImage(
-      imgData,
-      "PNG",
-      (mmPaperW - mmContentW) / 2,
-      0,
-      mmContentW,
-      mmContentH,
-      undefined,
-      "FAST"
-    );
-
-    // Crear archivo final
-    const pdfBlob = doc.output("blob");
-    const pdfFile = new File([pdfBlob], "ticket.pdf", {
-      type: "application/pdf"
-    });
-
-    // Compartir (iOS – Brother iPrint)
-    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-      await navigator.share({
-        files: [pdfFile],
-        title: "Ticket",
-        text: "Listo para imprimir en Brother"
-      });
-    } else {
-      // Descargar si no hay opción de compartir
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "ticket.pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      alert("PDF generado. Ábrelo en Brother iPrint&Label.");
-    }
-
-  } catch (err) {
-    alert("Error al generar PDF: " + err.message);
-  }
-};
-
 
     const imgData = canvas.toDataURL("image/png");
 
