@@ -223,6 +223,7 @@ td{
   <button id="shareBtn" class="btn btn-green">Compartir/Enviar (PDF)</button>
 </div>
 
+<!-- LIBRERÍAS -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
@@ -343,7 +344,7 @@ let p_units = splitAny(q.get("p_unit"));
 document.getElementById("printBtn").onclick = () => window.print();
 
 // ==============================
-// ACCIÓN: COMPARTIR / ENVIAR PDF — FIX PDF BLANCO
+// ACCIÓN: PDF — FIX COMPLETO PARA BROTHER
 // ==============================
 document.getElementById("shareBtn").onclick = async () => {
   try {
@@ -359,15 +360,17 @@ document.getElementById("shareBtn").onclick = async () => {
 
     const { jsPDF } = window.jspdf;
 
-    const mmPaperW = ancho;
-    const mmContentW = ancho === 80 ? 78 : 74;
+    // ---- CONFIGURACIÓN FIJA RJ-3050Ai ----
+    const mmPaperW = ancho;          // 76 o 80 mm
+    const mmContentW = mmPaperW === 80 ? 78 : 74;
+    const mmPaperH = 200;            // altura fija estable (puedes subir si deseas)
+
     const ratio = canvas.height / canvas.width;
     const mmContentH = mmContentW * ratio;
-    const mmSafeH = Math.ceil(mmContentH + 10);
 
     const doc = new jsPDF({
       unit: "mm",
-      format: [mmPaperW, mmSafeH],
+      format: [mmPaperW, mmPaperH],
       compress: false
     });
 
@@ -375,7 +378,7 @@ document.getElementById("shareBtn").onclick = async () => {
       imgData,
       "PNG",
       (mmPaperW - mmContentW) / 2,
-      0,
+      2,
       mmContentW,
       mmContentH,
       undefined,
@@ -401,7 +404,7 @@ document.getElementById("shareBtn").onclick = async () => {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      alert("PDF generado. Ábrelo en Brother iPrint&Label.");
+      alert("PDF generado. Listo para imprimir.");
     }
 
   } catch (e) {
@@ -411,4 +414,4 @@ document.getElementById("shareBtn").onclick = async () => {
 </script>
 
 </body>
-</html> 
+</html>
