@@ -5,35 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ticket 76/80 mm — RJ-3050Ai</title>
   <style>
+
+    /* ====== FIX DEFINITIVO PARA EVITAR CORTES DE PÁGINA ====== */
+    @page { size: 80mm auto; margin: 0; }
+
+    body, html { 
+      margin: 0 !important; 
+      padding: 0 !important; 
+    }
+
+    table, tr, td, tbody, thead, .line-row, .item-name, .meta-line {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    /* ========================================================= */
+
     :root{
-      /* por defecto ahora 80mm (puedes cambiar con ?ancho=76|80) */
-      --paper: 80mm;            /* se sobrescribe desde JS según ?ancho=76|80 */
-      --w: 78mm;                /* contenido real (aprovecha más espacio) */
+      --paper: 80mm;
+      --w: 78mm;
       --font: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-      /* fuentes aumentadas para mejor legibilidad en la impresora */
       --fs: 3.8mm;
       --fs-head: 6.0mm;
       --fs-sub: 3.6mm;
       --line: #000;
-      --pad: 1mm;               /* padding reducido para aprovechar más ancho */
+      --pad: 1mm;
     }
 
     *{ box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #000 !important; }
     html, body{
-      margin:0; padding:0; background:#fff; color:#000; /* fondo blanco, texto negro */
+      margin:0; padding:0; background:#fff; color:#000;
       font-family:var(--font);
       font-size:var(--fs);
       font-weight:700;
       width: var(--paper);
     }
+
     #ticket{
       width: var(--w);
       max-width: var(--w);
       padding: var(--pad);
       margin: 0 auto;
       font-weight:700;
-      color: #000; /* asegurar negro */
+      color:#000;
     }
 
     .store-header{ text-align:center; margin-bottom: 2mm; }
@@ -56,19 +70,18 @@
     .total-col{ width: 18mm; text-align: right; font-weight:900; }
     thead .desc-col{ padding-left: 4mm; }
 
-    td{ vertical-align: top; padding-top: .6mm; padding-left: 0; font-size: var(--fs-sub); line-height: 1.15; font-weight:800; color:#000; }
+    td{ vertical-align: top; padding-top: .6mm; font-size: var(--fs-sub); line-height: 1.15; font-weight:800; color:#000; }
     .line-row{ border-bottom:.25mm dashed #000; }
     .line-row:last-child{ border-bottom: none; }
 
-    .item-name{ display:block; font-size: calc(var(--fs) + 0.2mm); font-weight:900; margin-left: 0; word-break: break-word; color:#000; }
-    .meta-line{ display:flex; justify-content: space-between; align-items: baseline; margin-top:.2mm; margin-left:0; font-weight:800; gap: 2mm; color:#000; }
+    .item-name{ display:block; font-size: calc(var(--fs) + 0.2mm); font-weight:900; word-break: break-word; color:#000; }
+    .meta-line{ display:flex; justify-content: space-between; align-items: baseline; margin-top:.2mm; gap: 2mm; font-weight:800; color:#000; }
     .unit-price{ font-weight:900; white-space: nowrap; color:#000; }
     .upc-inline{ font-size: var(--fs); font-weight:900; color:#000; white-space: nowrap; }
 
     .totals{ margin-top: 2mm; font-size: var(--fs); font-weight:900; color:#000; }
     .total-line{ display:flex; justify-content: space-between; margin-top: 1mm; font-weight:900; color:#000; }
     .muted{ opacity:.95; font-weight:800; color:#000; }
-    .bold{ font-weight:900; color:#000; }
     .total-line.bold span:last-child{ font-size: calc(var(--fs) + 1.4mm); font-weight:900; }
 
     .footer{ text-align:center; margin-top: 2mm; font-size: var(--fs-sub); font-weight:800; word-break: break-word; color:#000; }
@@ -82,8 +95,10 @@
     #uiBtns{ position: fixed; right: 8px; bottom: 8px; display:flex; gap:8px; z-index: 9999; flex-direction: column; }
     .btn{ padding:6px 10px; border-radius:6px; border:1px solid #000; background:#fff; color:#000; cursor:pointer; font-family: var(--font); font-size: 12px; font-weight:700; }
     .btn-green{ border-color:#0a0; color:#0a0; background:#eaffea; }
+
   </style>
 </head>
+
 <body>
   <div id="ticket">
     <div class="store-header">
@@ -141,37 +156,36 @@
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
-    // ---------- Utilidades ----------
+
     const fmt = (v, currency) => `${currency}${Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2})}`;
     const splitAny = s => String(s || "").split(/[;,]/).map(x => x.trim()).filter(x => x !== "");
     const num = s => { if (s == null) return 0; const n = parseFloat(String(s).replace(/\u00A0/g," ").replace(/\s+/g,"").replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    const show = (id, v=true) => { const el = document.getElementById(id); if (el) el.style.display = v ? "block" : "none"; };
+    const show = (id, v=true) => { const el = document.getElementById(id); el.style.display = v ? "block" : "none"; };
 
     const q = new URLSearchParams(location.search);
 
-    // Soporte 76/80 mm por parámetro (default ahora 80)
     const ancho = (()=>{ const a = parseInt(q.get('ancho')||'80',10); return (a===76||a===80)?a:80; })();
-    // aprovechamos más ancho interior: para 80 -> 78mm contenido; para 76 -> 74mm
     const anchoContenido = ancho===80 ? 78 : 74;
 
-    // Ajusta CSS a ese ancho
     const root = document.documentElement;
     root.style.setProperty('--paper', ancho+'mm');
     root.style.setProperty('--w', anchoContenido+'mm');
 
-    // Fecha USA MM/DD/YYYY
     const formatUSDate = (input) => {
       if (!input) return new Intl.DateTimeFormat('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}).format(new Date());
       const s = String(input).trim();
-      let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/); // YYYY-MM-DD
+      let m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
       if (m) return `${m[2].padStart(2,'0')}/${m[3].padStart(2,'0')}/${m[1]}`;
-      m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);    // M/D/Y o D/M/Y
-      if (m){ const d=+m[1], mo=+m[2], y=m[3].length===2?`20${m[3]}`:m[3]; if(d>12&&mo<=12) return `${mo.toString().padStart(2,'0')}/${d.toString().padStart(2,'0')}/${y}`; return `${m[1].padStart(2,'0')}/${m[2].padStart(2,'0')}/${y}`; }
+      m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+      if (m){
+        const d=+m[1], mo=+m[2], y=m[3].length===2?`20${m[3]}`:m[3];
+        if(d>12&&mo<=12) return `${mo.toString().padStart(2,'0')}/${d.toString().padStart(2,'0')}/${y}`;
+        return `${m[1].padStart(2,'0')}/${m[2].padStart(2,'0')}/${y}`;
+      }
       return new Intl.DateTimeFormat('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}).format(new Date());
     };
 
-    // ---------- Datos ----------
     const titulo    = q.get("titulo")      || "Gellis Distributor, Inc";
     const detalles  = q.get("detalles")    || "Belleville, NJ 07109\nTel: 973-652-5547";
     const logoUrl   = q.get("logo")        || "";
@@ -200,11 +214,10 @@
       const str = String(s).trim();
       if (/%$/.test(str)) { const p = num(str.replace(/%/,"")); return base * (p/100); }
       const val = num(str);
-      if (val > 0 && val < 1 && base > 0) return base * val; // 0.18 => 18%
+      if (val > 0 && val < 1 && base > 0) return base * val;
       return val;
     };
 
-    // ---------- Render ----------
     (function render(){
       document.getElementById("store_title").textContent = titulo;
       document.getElementById("store_details").innerHTML = (detalles || "").replace(/\n/g,"<br>");
@@ -218,9 +231,11 @@
       setText("estado_text", estado);
       setText("nota_text", nota);
 
-      const tbody = document.getElementById("tbody"); tbody.innerHTML = "";
+      const tbody = document.getElementById("tbody"); 
+      tbody.innerHTML = "";
       let units = 0, subtotal = 0;
       const n = Math.max(descripciones.length, p_units.length, cantidades.length, upcs.length);
+
       for (let i=0; i<n; i++){
         const qty  = num(cantidades[i]);
         const name = descripciones[i] || "";
@@ -233,7 +248,7 @@
           const tr = document.createElement("tr");
           tr.className = "line-row";
           tr.innerHTML = `
-            <td class="qty-col">${qty || ""}</td>
+            <td class="qty-col">${qty}</td>
             <td class="desc-col">
               <span class="item-name">${name}</span>
               <div class="meta-line">
@@ -264,7 +279,6 @@
       }
     })();
 
-    // ---------- Acciones ----------
     document.getElementById("printBtn").onclick = () => { window.print(); };
 
     document.getElementById("shareBtn").onclick = async () => {
@@ -273,32 +287,26 @@
         const canvas = await html2canvas(ticket, { scale: 4, backgroundColor: '#ffffff', useCORS: true });
         const imgData = canvas.toDataURL('image/png');
 
-        // Tamaño PDF EXACTO según el ancho elegido
-        const mmPaperW   = ancho;             // 76 ó 80
-        const mmContentW = anchoContenido;    // 78 (para 80) ó 74 (para 76)
+        const mmPaperW   = ancho;
+        const mmContentW = anchoContenido;
         const mmContentH = mmContentW * (canvas.height / canvas.width);
-        const topPad = 0;
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: [mmPaperW, mmContentH] });
 
-        // Imagen centrada y compresión rápida
         doc.addImage(imgData, 'PNG',
-          (mmPaperW-mmContentW)/2, topPad, mmContentW, mmContentH, undefined, 'FAST');
-        doc.setProperties({
-          title: `Ticket ${mmPaperW}mm ${new Date().toISOString().slice(0,10)}`,
-          subject: `Ticket ${mmPaperW}mm`,
-          creator: 'POS Ticket Generator'
-        });
+          (mmPaperW-mmContentW)/2, 0, mmContentW, mmContentH, undefined, 'FAST');
 
         const pdfBlob = doc.output('blob');
         const fileName = `ticket_brother_${mmPaperW}mm.pdf`;
         const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-        // Mantengo la opción de compartir (iPhone / apps compatibles)
         if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-          await navigator.share({ files: [pdfFile], title: `Ticket ${mmPaperW}mm`, text: 'Imprimir en Brother RJ-3050Ai' });
+          await navigator.share({ 
+            files: [pdfFile], 
+            title: `Ticket ${mmPaperW}mm`, 
+            text: 'Imprimir en Brother RJ-3050Ai' 
+          });
         } else {
-          // Fallback descarga directa
           const url = URL.createObjectURL(pdfBlob);
           const a = document.createElement('a');
           a.href = url;
@@ -307,12 +315,14 @@
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
-          alert(`Se guardó "${fileName}". Ábrelo con iPrint&Label o la app de Brother y usa el papel correspondiente.`);
+          alert(`Se guardó "${fileName}". Ábrelo en la app de Brother para imprimir.`);
         }
       } catch (e) {
         alert('Error al generar PDF: ' + e.message);
       }
     };
+
   </script>
+
 </body>
 </html>
